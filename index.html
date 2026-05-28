@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🧹 今日房務整理看板</title>
+  <!-- 引入 Google Fonts 提升排版質感 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- 引入 Lucide 圖標庫 -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- 引入可愛扁平向量風 Favicon -->
+  <link rel="icon" href="housekeeping_icon.png" type="image/png">
+  <!-- CSS 樣式表 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 頂部精美標題與日期切換 -->
+    <header class="app-header">
+      <div class="header-main">
+        <div class="logo-area">
+          <div class="logo-icon" style="background: none; box-shadow: none;">
+            <img src="housekeeping_icon.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+          </div>
+          <div>
+            <h1>房務整理看板</h1>
+            <p class="subtitle">Housekeeping Status</p>
+          </div>
+        </div>
+        <!-- 功能按鈕群組 -->
+        <div class="header-actions" style="display: flex; gap: 8px;">
+          <button id="btn-monthly-toggle" class="icon-button" title="切換月分總覽">
+            <i data-lucide="calendar-days"></i>
+          </button>
+          <button id="btn-settings-toggle" class="icon-button" title="設定 Google Sheet 連結">
+            <i data-lucide="settings"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 日期控制列 (限日看板顯示) -->
+      <div class="date-selector" id="daily-date-selector">
+        <button id="btn-prev-day" class="date-nav-btn">
+          <i data-lucide="chevron-left"></i>
+          <span>前一天</span>
+        </button>
+        <div class="date-display-wrapper">
+          <i data-lucide="calendar" class="calendar-icon"></i>
+          <span id="date-text">2026 年 05 月 28 日</span>
+          <span id="day-of-week" class="badge-weekday">星期四</span>
+          <input type="date" id="date-picker" class="hidden-date-picker">
+        </div>
+        <button id="btn-next-day" class="date-nav-btn">
+          <span>後一天</span>
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- 日看板專用容器 -->
+    <div id="daily-view-container">
+      <!-- 工作量統計儀表板 -->
+      <section class="stats-dashboard">
+        <div class="stat-card total-cleans">
+          <div class="stat-icon-wrapper">
+            <i data-lucide="check-square"></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">今日待整理退房</span>
+            <span id="stat-total-rooms" class="stat-value">0</span>
+            <span class="stat-unit">間</span>
+          </div>
+        </div>
+        
+        <div class="stat-card large-cleans">
+          <div class="stat-icon-wrapper">
+            <i data-lucide="home"></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">今日大間退房</span>
+            <span id="stat-large-count" class="stat-value">0</span>
+            <span class="stat-unit">間</span>
+          </div>
+        </div>
+
+        <div class="stat-card small-cleans">
+          <div class="stat-icon-wrapper">
+            <i data-lucide="pocket"></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">今日小間退房</span>
+            <span id="stat-small-count" class="stat-value">0</span>
+            <span class="stat-unit">間</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 主房間列表區 -->
+      <main class="room-grid-container">
+        <!-- 載入中 / 錯誤 / 提示設定的狀態畫面 -->
+        <div id="state-message" class="state-message">
+          <div class="state-illustration" style="width: 180px; height: 180px; border-radius: 36px; background: none; box-shadow: none; margin-bottom: 24px;">
+            <img src="housekeeping_icon.png" alt="Welcome" class="pulse-icon" style="width: 100%; height: 100%; object-fit: cover; border-radius: 36px;">
+          </div>
+          <h3 id="state-title">開始使用房務看板</h3>
+          <p id="state-desc">請點擊下方按鈕設定您的 Google Sheet 發佈網址，或載入示範資料進行預覽。</p>
+          <div class="state-actions">
+            <button id="btn-load-demo" class="btn btn-secondary">載入示範資料</button>
+            <button id="btn-open-settings-hero" class="btn btn-primary">設定試算表連結</button>
+          </div>
+        </div>
+
+        <!-- 房間卡片容器 -->
+        <div id="room-cards-grid" class="room-cards-grid hidden">
+          <!-- 區塊 1：今日需打掃房間 -->
+          <div class="section-container" id="container-clean">
+            <div class="section-title-wrapper clean-title">
+              <i data-lucide="brush" class="title-icon"></i>
+              <h2>今日需打掃退房 (<span id="count-clean">0</span> 間)</h2>
+            </div>
+            <div id="grid-clean" class="grid-section">
+              <!-- 退房打掃卡片由 JS 生成 -->
+            </div>
+          </div>
+
+          <!-- 區塊 2：今日續住房間 -->
+          <div class="section-container" id="container-stayover">
+            <div class="section-title-wrapper stayover-title">
+              <i data-lucide="shield-alert" class="title-icon"></i>
+              <h2>今日續住房間 - 避免誤入 (<span id="count-stayover">0</span> 間)</h2>
+            </div>
+            <div id="grid-stayover" class="grid-section">
+              <!-- 續住卡片由 JS 生成 -->
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- 人員快速篩選工具列 -->
+      <section class="filter-toolbar">
+        <div class="filter-group">
+          <label for="filter-housekeeper">
+            <i data-lucide="user"></i>
+            <span>房務人員：</span>
+          </label>
+          <div class="select-wrapper">
+            <select id="filter-housekeeper">
+              <option value="ALL">👤 全部人員</option>
+            </select>
+          </div>
+        </div>
+        <div class="sync-indicator-wrapper">
+          <span id="sync-status" class="sync-status error">
+            <i data-lucide="alert-circle"></i> 未設定試算表連結
+          </span>
+          <button id="btn-sync-now" class="text-btn">
+            <i data-lucide="refresh-cw"></i> 立即同步
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 月總覽看板專用容器 (預設隱藏) -->
+    <div id="monthly-view-container" class="monthly-view-container hidden">
+      <!-- 月總覽工作量統計儀表板 -->
+      <section class="stats-dashboard">
+        <div class="stat-card large-cleans">
+          <div class="stat-icon-wrapper" style="background-color: var(--color-checkout-bg); color: var(--color-checkout-text);">
+            <i data-lucide="home"></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">本月大間退房累計</span>
+            <span id="monthly-large-count" class="stat-value">0</span>
+            <span class="stat-unit">間</span>
+          </div>
+        </div>
+
+        <div class="stat-card small-cleans">
+          <div class="stat-icon-wrapper" style="background-color: #fcf2ed; color: #8a4f3e;">
+            <i data-lucide="pocket"></i>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">本月小間退房累計</span>
+            <span id="monthly-small-count" class="stat-value">0</span>
+            <span class="stat-unit">間</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 月總覽控制列 -->
+      <section class="filter-toolbar" style="margin-top: 0;">
+        <div class="filter-group">
+          <label for="monthly-month-select">
+            <i data-lucide="calendar"></i>
+            <span>選擇月份：</span>
+          </label>
+          <div class="select-wrapper">
+            <select id="monthly-month-select">
+              <!-- 由 JS 動態生成有資料的月份 -->
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 月份日期清單區 -->
+      <section class="monthly-list-section">
+        <div class="section-title-wrapper clean-title" style="border-bottom: none; margin-bottom: 8px;">
+          <i data-lucide="list" class="title-icon"></i>
+          <h2 id="monthly-list-title" style="font-size: 1rem;">5 月排班明細</h2>
+        </div>
+        <div class="monthly-list-table-header">
+          <span class="col-date">日期/星期</span>
+          <span class="col-staff">負責人</span>
+          <span class="col-count">退房(大/小)</span>
+        </div>
+        <div id="monthly-days-list" class="monthly-days-list">
+          <!-- 1-31 日的列表會由 JS 動態生成 -->
+        </div>
+      </section>
+    </div>
+
+    <!-- 頁尾設計 -->
+    <footer class="app-footer">
+      <p>© 2026 房務整理管理系統 | 莫蘭迪日/月雙視圖看板</p>
+    </footer>
+  </div>
+
+  <!-- Google Sheet 設定抽屜 (Drawer) -->
+  <div id="settings-drawer" class="settings-drawer">
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3><i data-lucide="settings"></i> 系統設定</h3>
+        <button id="btn-settings-close" class="icon-button">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <div class="settings-group">
+          <label for="input-sheet-url">Google Sheet CSV 發佈網址</label>
+          <div class="input-desc">
+            請依照 <a href="README.md" target="_blank">設定說明文件</a>，將您的試算表「發佈到網路」並選擇「逗號分隔值 (.csv)」後，將產生的網址貼在下方：
+          </div>
+          <textarea id="input-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv" rows="4"></textarea>
+        </div>
+        
+        <div class="settings-actions">
+          <button id="btn-save-settings" class="btn btn-primary btn-block">
+            <i data-lucide="save"></i> 儲存並同步資料
+          </button>
+          <button id="btn-clear-settings" class="btn btn-danger-outline btn-block">
+            <i data-lucide="trash-2"></i> 清除連結資料
+          </button>
+        </div>
+
+        <div class="settings-help">
+          <h4>💡 如何快速取得 CSV 網址？</h4>
+          <ol>
+            <li>在您的 Google Sheet 點選<strong>「檔案」➔「共用」➔「發佈到網路」</strong>。</li>
+            <li>選擇您排班的<strong>「工作表名稱」</strong>，並將格式改為<strong>「逗號分隔值 (.csv)」</strong>。</li>
+            <li>點選<strong>「發佈」</strong>並複製產生的網址，貼到上方即可！</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮動置頂通知 (Toast) -->
+  <div id="toast" class="toast">
+    <span id="toast-message">提示訊息</span>
+  </div>
+
+  <!-- JS 邏輯 -->
+  <script src="app.js"></script>
+</body>
+</html>
