@@ -3,6 +3,11 @@
  * 100% 使用「繁體中文（台灣）」進行程式碼邏輯註解與使用者提示。
  */
 
+// --- 📢 管理者設定區 (預設雲端連結) ---
+// 💡 您可以將在 Google Sheet 產生的 CSV 連結填寫在下方雙引號中做為「預設網址」！
+// 這樣一來，所有員工的手機第一次點開網頁，完全不需要貼上網址，就能直接自動同步您的排班表！
+const DEFAULT_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTH_CEEBRYiWoKSC28uXLf6m_svyJ-iTimxeY7mj-BgiLhewfvkw_VTgXXKAaJxIMsJyFd7C14VC3Y/pub?gid=1383763028&single=true&output=csv";
+
 // --- 全域變數定義 ---
 let rawSheetData = "";      // 儲存從 Google Sheet 抓取或 Demo 的原始文字 (CSV/TSV 格式)
 let currentSelectedDate = new Date(); // 當前瀏覽的日期，預設為今天
@@ -85,10 +90,13 @@ const toastMessageEl = document.getElementById('toast-message');
 document.addEventListener('DOMContentLoaded', () => {
   // 初始化 Lucide 圖標
   lucide.createIcons();
-  
-  // 從 LocalStorage 載入已儲存的 Google Sheet 連結
-  const savedUrl = localStorage.getItem('google_sheet_csv_url');
-  if (savedUrl) {
+
+  // 從 LocalStorage 載入已儲存的 Google Sheet 連結，若無則讀取預設寫死的雲端網址
+  const savedUrl = localStorage.getItem('google_sheet_csv_url') || DEFAULT_CSV_URL;
+
+  const hasConfiguredUrl = savedUrl && savedUrl !== "您的_GOOGLE_SHEET_CSV_發佈網址_填在這裡" && savedUrl.trim() !== "";
+
+  if (hasConfiguredUrl) {
     inputSheetUrlEl.value = savedUrl;
     fetchGoogleSheetData(savedUrl);
   } else {
@@ -100,21 +108,21 @@ document.addEventListener('DOMContentLoaded', () => {
   btnSettingsCloseEl.addEventListener('click', closeSettings);
   drawerOverlayEl.addEventListener('click', closeSettings);
   btnOpenSettingsHeroEl.addEventListener('click', openSettings);
-  
+
   btnSaveSettingsEl.addEventListener('click', saveSettings);
   btnClearSettingsEl.addEventListener('click', clearSettings);
-  
+
   btnLoadDemoEl.addEventListener('click', loadDemoData);
   btnSyncNowEl.addEventListener('click', triggerManualSync);
-  
+
   // 日/月 看板切換按鈕
   btnMonthlyToggleEl.addEventListener('click', () => toggleViewMode());
   monthlyMonthSelectEl.addEventListener('change', renderMonthlyOverview);
-  
+
   // 日期切換按鈕
   btnPrevDayEl.addEventListener('click', () => changeDate(-1));
   btnNextDayEl.addEventListener('click', () => changeDate(1));
-  
+
   // 日期選擇器變更事件
   datePickerEl.addEventListener('change', (e) => {
     if (e.target.value) {
@@ -158,7 +166,7 @@ function updateDateDisplay() {
   const yyyy = currentSelectedDate.getFullYear();
   const mm = String(currentSelectedDate.getMonth() + 1).padStart(2, '0');
   const dd = String(currentSelectedDate.getDate()).padStart(2, '0');
-  
+
   dateTextEl.textContent = `${yyyy} 年 ${mm} 月 ${dd} 日`;
   dayOfWeekEl.textContent = days[currentSelectedDate.getDay()];
   datePickerEl.value = `${yyyy}-${mm}-${dd}`;
@@ -187,7 +195,7 @@ function saveSettings() {
     showToast('❌ 請輸入有效的網址！');
     return;
   }
-  
+
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     showToast('❌ 網址必須以 http:// 或 https:// 開頭！');
     return;
@@ -206,7 +214,7 @@ function clearSettings() {
   rawSheetData = "";
   parsedSchedule = {};
   availableHousekeepers.clear();
-  
+
   showToast('🗑️ 設定已清除！');
   closeSettings();
   showStateMessage('start');
@@ -219,7 +227,7 @@ function loadDemoData() {
   showToast('✨ 已載入 2026 年 5 月份莫蘭迪示範資料！');
   parseCSVToSchedule(rawSheetData);
   updateSyncStatus('success', '目前使用示範資料');
-  
+
   // 設定時間為示範資料有的 2026-05-28，方便使用者看得到內容
   currentSelectedDate = new Date('2026-05-28');
   updateDateDisplay();
@@ -241,7 +249,7 @@ function triggerManualSync() {
 function updateSyncStatus(type, message) {
   syncStatusEl.className = 'sync-status';
   syncStatusEl.innerHTML = '';
-  
+
   const icon = document.createElement('i');
   if (type === 'success') {
     syncStatusEl.classList.add('success');
@@ -259,14 +267,14 @@ function updateSyncStatus(type, message) {
     syncStatusEl.appendChild(icon);
     syncStatusEl.appendChild(document.createTextNode(' ' + message));
   }
-  
+
   lucide.createIcons();
 }
 
 // --- 從 Google Sheet URL 下載 CSV 資料 ---
 async function fetchGoogleSheetData(csvUrl) {
   updateSyncStatus('syncing', '正在同步雲端資料...');
-  
+
   try {
     // 為了防呆，如果使用者複製了整份 Sheet 的 edit 網址而非 pub 網址，我們在 JS 做個貼心的自動置換！
     let finalUrl = csvUrl;
@@ -283,12 +291,12 @@ async function fetchGoogleSheetData(csvUrl) {
     if (!response.ok) {
       throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
     }
-    
+
     const text = await response.text();
     if (!text || text.trim().length === 0) {
       throw new Error('下載的資料為空，請確認 Google Sheet 發佈設定！');
     }
-    
+
     rawSheetData = text;
     showToast('✅ 雲端資料同步成功！');
     updateSyncStatus('success', '已同步最新雲端資料');
@@ -298,7 +306,7 @@ async function fetchGoogleSheetData(csvUrl) {
     console.error('Fetch Error:', error);
     showToast('❌ 同步失敗，請確認網路或連結是否正確！');
     updateSyncStatus('error', '雲端同步失敗');
-    
+
     if (!rawSheetData) {
       showStateMessage('error', error.message);
     }
@@ -309,27 +317,27 @@ async function fetchGoogleSheetData(csvUrl) {
 function parseCSVToSchedule(csvText) {
   // 將 CSV 資料按行分割，並相容 Windows/Unix 換行字元
   const lines = csvText.split(/\r?\n/);
-  
+
   parsedSchedule = {};
   availableHousekeepers.clear();
-  
+
   let currentMonth = null;
   let currentBlockRows = [];
-  
+
   // 遍歷每一行，將其劃分為多個月份區塊 (Monthly Blocks)
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    
+
     // 解析 CSV 儲存格，支援逗號 (,) 與 Tab 鍵 (\t) 兩種分隔符號
     // 這樣使用者直接在網頁測試貼上時也能完美解析
     const delimiter = line.includes('\t') ? '\t' : ',';
     const cells = line.split(delimiter).map(cell => cell.trim().replace(/^"|"$/g, ''));
-    
+
     if (cells.length === 0) continue;
-    
+
     const firstCell = cells[0];
-    
+
     // 🔍 判斷是否為「月份區塊」的開頭：第一格為 1 ~ 12 的數字
     const parsedMonth = parseInt(firstCell);
     if (!isNaN(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12) {
@@ -345,12 +353,12 @@ function parseCSVToSchedule(csvText) {
       currentBlockRows.push(cells);
     }
   }
-  
+
   // 不要漏掉最後一個月份區塊的處理
   if (currentMonth !== null && currentBlockRows.length > 0) {
     processMonthBlock(currentMonth, currentBlockRows);
   }
-  
+
   // 更新房務人員下拉選單
   populateHousekeeperDropdown();
 }
@@ -363,38 +371,38 @@ function parseCSVToSchedule(csvText) {
 function processMonthBlock(month, rows) {
   // 第一列為日期標題 [month, '1', '2', '3', ..., '31']
   const dateHeader = rows[0];
-  
+
   // 尋找包含「星期」的列
   const weekdayRow = rows.find(r => r[0] === '星期');
-  
+
   // 尋找包含「大」、「小」、「人員」的列
   const largeRow = rows.find(r => r[0] === '大');
   const smallRow = rows.find(r => r[0] === '小');
   const staffRow = rows.find(r => r[0] === '人員');
-  
+
   // 尋找所有的房間列（房號通常是三位數的純數字，例如 201, 202, 301, 302）
   const roomRows = rows.filter(r => {
     const roomNum = parseInt(r[0]);
     return !isNaN(roomNum) && r[0].length >= 3 && r[0] !== String(month);
   });
-  
+
   // 如果連日期標題都沒有，就無法解析
   if (!dateHeader) return;
-  
+
   // 建立此月份的排班資料庫
   if (!parsedSchedule[month]) {
     parsedSchedule[month] = {};
   }
-  
+
   // 遍歷 1 到 31 日的每一欄
   // 從 index 1 開始（index 0 是列名稱如 201、人員、大）
   for (let colIdx = 1; colIdx < dateHeader.length; colIdx++) {
     const dayStr = dateHeader[colIdx];
     const day = parseInt(dayStr);
-    
+
     // 如果這欄不是有效日期，則跳過
     if (isNaN(day) || day < 1 || day > 31) continue;
-    
+
     // 初始化此月份中，這一天的具體排班結構
     parsedSchedule[month][day] = {
       weekday: weekdayRow ? weekdayRow[colIdx] : "",
@@ -403,7 +411,7 @@ function processMonthBlock(month, rows) {
       todayStaffName: staffRow ? staffRow[colIdx] || "" : "",
       roomRawValues: {} // 儲存房號當天的原始狀態代號 (用於隔日打掃邏輯)
     };
-    
+
     // 遍歷所有房號列，抓取當天的原始狀態代號
     roomRows.forEach(r => {
       const roomNum = r[0];
@@ -431,7 +439,7 @@ function populateHousekeeperDropdown() {
   // 先保留第一項 "👤 全部人員"
   const currentVal = housekeeperFilterEl.value;
   housekeeperFilterEl.innerHTML = '<option value="ALL">👤 全部人員</option>';
-  
+
   // 將收集到的所有房務員名字依序加入
   Array.from(availableHousekeepers).sort().forEach(name => {
     const option = document.createElement('option');
@@ -439,7 +447,7 @@ function populateHousekeeperDropdown() {
     option.textContent = `👤 ${name}`;
     housekeeperFilterEl.appendChild(option);
   });
-  
+
   // 恢復先前的選擇，避免切換日期時被重置
   if (Array.from(availableHousekeepers).includes(currentVal)) {
     housekeeperFilterEl.value = currentVal;
@@ -450,11 +458,11 @@ function populateHousekeeperDropdown() {
 function showStateMessage(state, extraInfo = '') {
   stateMessageEl.classList.remove('hidden');
   roomCardsGridEl.classList.add('hidden');
-  
+
   const titleEl = document.getElementById('state-title');
   const descEl = document.getElementById('state-desc');
   const actionArea = stateMessageEl.querySelector('.state-actions');
-  
+
   if (state === 'start') {
     titleEl.textContent = '開始使用房務看板';
     descEl.textContent = '請點擊下方按鈕設定您的 Google Sheet CSV 發佈網址，或載入示範資料進行預覽。';
@@ -474,10 +482,10 @@ function showStateMessage(state, extraInfo = '') {
 function renderTodayDashboard() {
   const month = currentSelectedDate.getMonth() + 1;
   const day = currentSelectedDate.getDate();
-  
+
   // 檢查資料庫是否有該月份與該日期的資料
   const dayData = parsedSchedule[month] ? parsedSchedule[month][day] : null;
-  
+
   if (!dayData) {
     // 歸零儀表板數值
     statTotalRoomsEl.textContent = '0';
@@ -486,28 +494,28 @@ function renderTodayDashboard() {
     showStateMessage('no_data');
     return;
   }
-  
+
   // 1. 更新大/小退房儀表板統計數值 (讀取今日 Day D 欄位)
   statLargeCountEl.textContent = dayData.largeCount;
   statSmallCountEl.textContent = dayData.smallCount;
-  
+
   // 2. 智慧日期偏移：抓取「昨天 Day D-1」的房間狀態，作為「今天 Day D」的打掃任務
   const yesterday = new Date(currentSelectedDate);
   yesterday.setDate(yesterday.getDate() - 1);
   const prevMonth = yesterday.getMonth() + 1;
   const prevDay = yesterday.getDate();
-  
+
   const yesterdayData = parsedSchedule[prevMonth] ? parsedSchedule[prevMonth][prevDay] : null;
   const todayStaff = dayData.todayStaffName || "未分配";
-  
+
   let todayRooms = [];
-  
+
   if (yesterdayData && yesterdayData.roomRawValues) {
     Object.entries(yesterdayData.roomRawValues).forEach(([roomNum, taskCode]) => {
       // 解析昨天格子代號對應的今日房務分類
       let taskType = "未知狀態";
       let taskClass = "";
-      
+
       if (taskCode === "-") {
         taskType = "續住（避免誤入）";
         taskClass = "do-not-enter";
@@ -521,7 +529,7 @@ function renderTodayDashboard() {
         taskType = taskCode;
         taskClass = "checkout large";
       }
-      
+
       todayRooms.push({
         roomNumber: roomNum,
         taskCode: taskCode,
@@ -531,10 +539,10 @@ function renderTodayDashboard() {
       });
     });
   }
-  
+
   // 3. 依據選擇的房務人員進行房間過濾
   const selectedHousekeeper = housekeeperFilterEl.value; // 'ALL' 或是特定名字如 '華'
-  
+
   const filteredRooms = todayRooms.filter(room => {
     if (selectedHousekeeper === 'ALL') {
       return true;
@@ -542,36 +550,36 @@ function renderTodayDashboard() {
     // 支援模糊比對（例如 "姐/華" 當選取 "華" 或 "姐" 時都能篩選出來）
     return room.housekeeper.includes(selectedHousekeeper);
   });
-  
+
   // 區分「需整理退房」與「續住房間」
   const cleanRooms = filteredRooms.filter(r => r.taskCode === "1" || r.taskCode === "2");
   const stayoverRooms = filteredRooms.filter(r => r.taskCode === "-");
-  
+
   // 統計總整理間數為「退房打掃間數」
   statTotalRoomsEl.textContent = cleanRooms.length;
-  
+
   // 4. 判斷是否有任何房間資訊
   if (filteredRooms.length === 0) {
     showStateMessage('no_data');
     return;
   }
-  
+
   // 隱藏狀態訊息，顯示房間卡片網格
   stateMessageEl.classList.add('hidden');
   roomCardsGridEl.classList.remove('hidden');
-  
+
   // 取得分區容器
   const gridCleanEl = document.getElementById('grid-clean');
   const gridStayoverEl = document.getElementById('grid-stayover');
   const containerCleanEl = document.getElementById('container-clean');
   const containerStayoverEl = document.getElementById('container-stayover');
-  
+
   gridCleanEl.innerHTML = '';
   gridStayoverEl.innerHTML = '';
-  
+
   document.getElementById('count-clean').textContent = cleanRooms.length;
   document.getElementById('count-stayover').textContent = stayoverRooms.length;
-  
+
   // 顯示/隱藏打掃分區
   if (cleanRooms.length === 0) {
     containerCleanEl.classList.add('hidden');
@@ -581,9 +589,9 @@ function renderTodayDashboard() {
     cleanRooms.forEach(room => {
       const card = document.createElement('div');
       card.className = `room-card ${room.taskClass}`;
-      
+
       const iconName = "log-out"; // 退房圖示
-      
+
       card.innerHTML = `
         <div class="room-main-info">
           <div class="room-number-badge">${room.roomNumber}</div>
@@ -607,7 +615,7 @@ function renderTodayDashboard() {
       gridCleanEl.appendChild(card);
     });
   }
-  
+
   // 顯示/隱藏續住防誤入分區
   if (stayoverRooms.length === 0) {
     containerStayoverEl.classList.add('hidden');
@@ -617,9 +625,9 @@ function renderTodayDashboard() {
     stayoverRooms.forEach(room => {
       const card = document.createElement('div');
       card.className = `room-card ${room.taskClass}`;
-      
+
       const iconName = "shield-alert"; // 警示盾牌圖示
-      
+
       card.innerHTML = `
         <div class="room-main-info">
           <div class="room-number-badge">${room.roomNumber}</div>
@@ -643,7 +651,7 @@ function renderTodayDashboard() {
       gridStayoverEl.appendChild(card);
     });
   }
-  
+
   // 重新渲染新插入 DOM 的 Lucide 圖標
   lucide.createIcons();
 }
@@ -656,40 +664,40 @@ function renderTodayDashboard() {
  */
 function toggleViewMode(forceState = null) {
   isMonthlyView = forceState !== null ? forceState : !isMonthlyView;
-  
+
   if (isMonthlyView) {
     // 隱藏日看板相關容器
     dailyViewContainerEl.classList.add('hidden');
     dailyDateSelectorEl.classList.add('hidden');
-    
+
     // 顯示月總覽容器
     monthlyViewContainerEl.classList.remove('hidden');
-    
+
     // 更改切換按鈕的圖標為日曆/卡片切換
     btnMonthlyToggleEl.innerHTML = '<i data-lucide="layout-grid"></i>';
     btnMonthlyToggleEl.title = "切換回日打掃卡片";
-    
+
     // 載入月份選單與數據明細
     populateMonthDropdown();
     renderMonthlyOverview();
-    
+
     showToast('📅 已開啟月份排班總覽');
   } else {
     // 顯示日看板容器
     dailyViewContainerEl.classList.remove('hidden');
     dailyDateSelectorEl.classList.remove('hidden');
-    
+
     // 隱藏月總覽容器
     monthlyViewContainerEl.classList.add('hidden');
-    
+
     // 恢復切換按鈕圖標
     btnMonthlyToggleEl.innerHTML = '<i data-lucide="calendar-days"></i>';
     btnMonthlyToggleEl.title = "切換月分總覽";
-    
+
     // 重新繪製今日打掃看板
     renderTodayDashboard();
   }
-  
+
   // 重新繪製圖標
   lucide.createIcons();
 }
@@ -700,10 +708,10 @@ function toggleViewMode(forceState = null) {
 function populateMonthDropdown() {
   const currentVal = monthlyMonthSelectEl.value;
   monthlyMonthSelectEl.innerHTML = '';
-  
+
   // 獲取排班資料中所有有資料的月份
   const availableMonths = Object.keys(parsedSchedule).map(m => parseInt(m)).sort((a, b) => a - b);
-  
+
   if (availableMonths.length === 0) {
     // 防呆：若無資料，預設加入當前月份
     const currentMonth = currentSelectedDate.getMonth() + 1;
@@ -719,7 +727,7 @@ function populateMonthDropdown() {
       monthlyMonthSelectEl.appendChild(option);
     });
   }
-  
+
   // 預設選取當前瀏覽日期所屬的月份
   const activeMonth = currentSelectedDate.getMonth() + 1;
   if (availableMonths.includes(activeMonth)) {
@@ -735,55 +743,55 @@ function populateMonthDropdown() {
 function renderMonthlyOverview() {
   const selectedMonth = parseInt(monthlyMonthSelectEl.value);
   if (isNaN(selectedMonth)) return;
-  
+
   // 1. 更新清單標題
   monthlyListTitleEl.textContent = `${selectedMonth} 月排班明細`;
-  
+
   const year = currentSelectedDate.getFullYear();
   // 計算該月份的總天數 (例如 5月為 31天)
   const daysInMonth = new Date(year, selectedMonth, 0).getDate();
-  
+
   let totalLarge = 0;
   let totalSmall = 0;
-  
+
   monthlyDaysListEl.innerHTML = '';
-  
+
   // 2. 獲取今天系統時間的日期，供「今日標記」使用
   const today = new Date();
   const todayYear = today.getFullYear();
   const todayMonth = today.getMonth() + 1;
   const todayDay = today.getDate();
-  
+
   // 3. 循序生成 1 號到當月最後一天的清單
   for (let d = 1; d <= daysInMonth; d++) {
     // 檢查當天是否有排班資料
     const dayData = parsedSchedule[selectedMonth] && parsedSchedule[selectedMonth][d]
       ? parsedSchedule[selectedMonth][d]
       : null;
-      
+
     // 取得各項數值 (若無資料則為預設值)
     const weekday = dayData ? dayData.weekday : getWeekdayName(year, selectedMonth, d);
     const housekeeper = dayData ? dayData.todayStaffName : "";
     const largeCount = dayData ? dayData.largeCount : 0;
     const smallCount = dayData ? dayData.smallCount : 0;
-    
+
     // 累計月份總量
     totalLarge += largeCount;
     totalSmall += smallCount;
-    
+
     // 4. 動態創建列表列
     const row = document.createElement('div');
     row.className = 'monthly-row';
-    
+
     // 標記「今天」的發光背景
     if (d === todayDay && selectedMonth === todayMonth && year === todayYear) {
       row.classList.add('is-today');
     }
-    
+
     // 判斷是否為週末 (星期六、星期日)，給予專屬的紅粉色 badge 標色
     const isWeekend = weekday === '六' || weekday === '日' || weekday === 'Sat' || weekday === 'Sun';
     const weekendClass = isWeekend ? 'weekend' : '';
-    
+
     // 5. 繪製列的 HTML 結構
     row.innerHTML = `
       <div class="col-date">
@@ -802,28 +810,28 @@ function renderMonthlyOverview() {
         </span>
       </div>
     `;
-    
+
     // 6. 智慧聯動：點選此列，自動變更日期並切換回日看板
     row.addEventListener('click', () => {
       // 變更當前選定時間
       currentSelectedDate = new Date(year, selectedMonth - 1, d);
-      
+
       // 更新日看板上方日期與日期選擇器的數值
       updateDateDisplay();
-      
+
       // 退出月總覽視圖，返回日卡片
       toggleViewMode(false);
-      
+
       showToast(`📅 已為您切換至 ${selectedMonth}月${d}日 看板！`);
     });
-    
+
     monthlyDaysListEl.appendChild(row);
   }
-  
+
   // 7. 更新月總覽上方累計大/小統計面板
   monthlyLargeCountEl.textContent = totalLarge;
   monthlySmallCountEl.textContent = totalSmall;
-  
+
   // 重新渲染 Lucide 圖標
   lucide.createIcons();
 }
