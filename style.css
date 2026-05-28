@@ -239,6 +239,8 @@ body {
   height: 100%;
   opacity: 0;
   cursor: pointer;
+  z-index: 10;
+  pointer-events: none; /* 讓點擊事件完全穿透到外框，由 JS 強行喚醒原生選擇器，相容電腦與手機 */
 }
 
 /* 今日工作統計卡片區 */

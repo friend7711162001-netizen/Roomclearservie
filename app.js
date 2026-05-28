@@ -132,6 +132,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // 智慧解鎖手機與電腦端點擊：點擊「2026年05月28日」外框的任何地方皆能主動喚醒日期選單
+  const dateDisplayWrapper = document.querySelector('.date-display-wrapper');
+  if (dateDisplayWrapper) {
+    dateDisplayWrapper.addEventListener('click', () => {
+      try {
+        // 主動呼叫現代瀏覽器標準的 showPicker()，完美彈出原生日期選擇器
+        datePickerEl.showPicker();
+      } catch (err) {
+        // 相容於部分不支援 showPicker 的舊版瀏覽器
+        datePickerEl.click();
+      }
+    });
+  }
+
   // 人員篩選變更事件
   housekeeperFilterEl.addEventListener('change', () => {
     renderTodayDashboard();
@@ -778,6 +792,12 @@ function renderMonthlyOverview() {
     // 累計月份總量
     totalLarge += largeCount;
     totalSmall += smallCount;
+
+    // 💡 智慧過濾：如果當天沒有大間、小間退房，且沒有分配打掃人員，則代表是空白空閒日，直接隱藏不顯示！
+    const hasActiveTasks = largeCount > 0 || smallCount > 0 || (housekeeper && housekeeper.trim() !== "" && housekeeper !== "-" && housekeeper !== "/");
+    if (!hasActiveTasks) {
+      continue;
+    }
 
     // 4. 動態創建列表列
     const row = document.createElement('div');
