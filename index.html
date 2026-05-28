@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>🧹 今日房務整理看板</title>
+  <title>🧹 媽宮古街10號民宿房務整理</title>
   <!-- 引入 Google Fonts 提升排版質感 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+    rel="stylesheet">
   <!-- 引入 Lucide 圖標庫 -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- 引入可愛扁平向量風 Favicon -->
@@ -15,6 +18,7 @@
   <!-- CSS 樣式表 -->
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="app-container">
     <!-- 頂部精美標題與日期切換 -->
@@ -22,10 +26,11 @@
       <div class="header-main">
         <div class="logo-area">
           <div class="logo-icon" style="background: none; box-shadow: none;">
-            <img src="housekeeping_icon.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+            <img src="housekeeping_icon.png" alt="Logo"
+              style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
           </div>
           <div>
-            <h1>房務整理看板</h1>
+            <h1>媽宮古街10號民宿房間統計</h1>
             <p class="subtitle">Housekeeping Status</p>
           </div>
         </div>
@@ -73,7 +78,7 @@
             <span class="stat-unit">間</span>
           </div>
         </div>
-        
+
         <div class="stat-card large-cleans">
           <div class="stat-icon-wrapper">
             <i data-lucide="home"></i>
@@ -101,8 +106,10 @@
       <main class="room-grid-container">
         <!-- 載入中 / 錯誤 / 提示設定的狀態畫面 -->
         <div id="state-message" class="state-message">
-          <div class="state-illustration" style="width: 180px; height: 180px; border-radius: 36px; background: none; box-shadow: none; margin-bottom: 24px;">
-            <img src="housekeeping_icon.png" alt="Welcome" class="pulse-icon" style="width: 100%; height: 100%; object-fit: cover; border-radius: 36px;">
+          <div class="state-illustration"
+            style="width: 180px; height: 180px; border-radius: 36px; background: none; box-shadow: none; margin-bottom: 24px;">
+            <img src="housekeeping_icon.png" alt="Welcome" class="pulse-icon"
+              style="width: 100%; height: 100%; object-fit: cover; border-radius: 36px;">
           </div>
           <h3 id="state-title">開始使用房務看板</h3>
           <p id="state-desc">請點擊下方按鈕設定您的 Google Sheet 發佈網址，或載入示範資料進行預覽。</p>
@@ -243,9 +250,10 @@
           <div class="input-desc">
             請依照 <a href="README.md" target="_blank">設定說明文件</a>，將您的試算表「發佈到網路」並選擇「逗號分隔值 (.csv)」後，將產生的網址貼在下方：
           </div>
-          <textarea id="input-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv" rows="4"></textarea>
+          <textarea id="input-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv"
+            rows="4"></textarea>
         </div>
-        
+
         <div class="settings-actions">
           <button id="btn-save-settings" class="btn btn-primary btn-block">
             <i data-lucide="save"></i> 儲存並同步資料
@@ -275,4 +283,5 @@
   <!-- JS 邏輯 -->
   <script src="app.js"></script>
 </body>
+
 </html>
