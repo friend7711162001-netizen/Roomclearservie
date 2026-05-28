@@ -132,19 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 智慧解鎖手機與電腦端點擊：點擊「2026年05月28日」外框的任何地方皆能主動喚醒日期選單
-  const dateDisplayWrapper = document.querySelector('.date-display-wrapper');
-  if (dateDisplayWrapper) {
-    dateDisplayWrapper.addEventListener('click', () => {
-      try {
-        // 主動呼叫現代瀏覽器標準的 showPicker()，完美彈出原生日期選擇器
-        datePickerEl.showPicker();
-      } catch (err) {
-        // 相容於部分不支援 showPicker 的舊版瀏覽器
-        datePickerEl.click();
-      }
-    });
-  }
+
 
   // 人員篩選變更事件
   housekeeperFilterEl.addEventListener('change', () => {
