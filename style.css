@@ -33,6 +33,16 @@
   --color-pending-bg: #f0ede6;
   --color-pending-text: #594f3e;
 
+  /* 大間退房專屬：莫蘭迪優雅藍灰色 (Slate Blue) */
+  --color-large-theme: #8faec2;
+  --color-large-theme-bg: #e8eff4;
+  --color-large-theme-text: #2c4456;
+
+  /* 小間退房專屬：莫蘭迪暖調粉紅色 (Dusty Rose) */
+  --color-small-theme: #dca098;
+  --color-small-theme-bg: #faf0ee;
+  --color-small-theme-text: #8e3e35;
+
   /* 其他按鈕與功能色彩 */
   --color-white: #ffffff;
   --color-danger: #cf8a85;
@@ -285,12 +295,12 @@ body {
   color: var(--color-pending-text);
 }
 .large-cleans .stat-icon-wrapper {
-  background-color: var(--color-stayover-bg);
-  color: var(--color-stayover-text);
+  background-color: var(--color-large-theme-bg);
+  color: var(--color-large-theme-text);
 }
 .small-cleans .stat-icon-wrapper {
-  background-color: var(--color-checkout-bg);
-  color: var(--color-checkout-text);
+  background-color: var(--color-small-theme-bg);
+  color: var(--color-small-theme-text);
 }
 
 .stat-details {
@@ -556,20 +566,20 @@ body {
 
 /* 1. 大間退房卡片樣式 (代號 2) */
 .room-card.checkout.large {
-  border-left: 6px solid var(--color-checkout);
+  border-left: 6px solid var(--color-large-theme);
 }
 .room-card.checkout.large .type-label {
-  background-color: var(--color-checkout-bg);
-  color: var(--color-checkout-text);
+  background-color: var(--color-large-theme-bg);
+  color: var(--color-large-theme-text);
 }
 
 /* 2. 小間退房卡片樣式 (代號 1) */
 .room-card.checkout.small {
-  border-left: 6px solid #e7c3b3; /* 莫蘭迪橘粉 */
+  border-left: 6px solid var(--color-small-theme);
 }
 .room-card.checkout.small .type-label {
-  background-color: #fcf2ed;
-  color: #8a4f3e;
+  background-color: var(--color-small-theme-bg);
+  color: var(--color-small-theme-text);
 }
 
 /* 3. 續住避免誤入卡片樣式 (代號 -) */
@@ -1098,13 +1108,13 @@ body {
 }
 
 .mini-count-badge.large {
-  background-color: var(--color-checkout-bg);
-  color: var(--color-checkout-text);
+  background-color: var(--color-large-theme-bg);
+  color: var(--color-large-theme-text);
 }
 
 .mini-count-badge.small {
-  background-color: #fcf2ed;
-  color: #8a4f3e;
+  background-color: var(--color-small-theme-bg);
+  color: var(--color-small-theme-text);
 }
 
 /* 0間的時候低調顯示 */

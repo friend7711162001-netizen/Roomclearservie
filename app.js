@@ -604,7 +604,8 @@ function renderTodayDashboard() {
       const card = document.createElement('div');
       card.className = `room-card ${room.taskClass}`;
 
-      const iconName = "log-out"; // 退房圖示
+      // 智慧圖案配置：大間房為 home (🏠)，小間房為 bed (🛏️)
+      const iconName = room.taskClass.includes('large') ? 'home' : 'bed';
 
       card.innerHTML = `
         <div class="room-main-info">
@@ -826,7 +827,7 @@ function renderMonthlyOverview() {
           <i data-lucide="home" style="width:10px;height:10px;"></i> 大 ${largeCount}
         </span>
         <span class="mini-count-badge small ${smallCount === 0 ? 'zero' : ''}">
-          <i data-lucide="pocket" style="width:10px;height:10px;"></i> 小 ${smallCount}
+          <i data-lucide="bed" style="width:10px;height:10px;"></i> 小 ${smallCount}
         </span>
       </div>
     `;
