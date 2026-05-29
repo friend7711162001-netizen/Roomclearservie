@@ -443,6 +443,21 @@ function processMonthBlock(month, rows) {
       const taskCode = r[colIdx] ? r[colIdx].trim() : "";
       if (taskCode && taskCode !== "0") {
         parsedSchedule[month][day].roomRawValues[roomNum] = taskCode;
+
+        // 智慧提取房間格子中的指定負責人，加入全域人員清單中
+        let cleanValue = taskCode.replace(/[(（[［{｛].*?[)）\]］}｝]/g, '').trim();
+        const remains = cleanValue.substring(1).trim();
+        if (remains) {
+          const parsedName = remains.replace(/^[:：\s-]+/, '').trim();
+          if (parsedName && parsedName !== "-" && parsedName !== "/") {
+            // 支援多人名字分割
+            const splitNames = parsedName.split(/[\/|、&]/);
+            splitNames.forEach(name => {
+              const cleanName = name.trim();
+              if (cleanName) availableHousekeepers.add(cleanName);
+            });
+          }
+        }
       }
     });
 
@@ -537,18 +552,27 @@ function renderTodayDashboard() {
 
   if (yesterdayData && yesterdayData.roomRawValues) {
     Object.entries(yesterdayData.roomRawValues).forEach(([roomNum, rawValue]) => {
-      // 智慧解析狀態代號與備註內容 (例：2(12:00退房) 或 1[加棉被])
-      const code = rawValue.charAt(0);
+      // 智慧解析狀態代號、備註與指定負責人 (例：2:華(12:00退房) 或 1:姐 或 2(加床))
       let memo = "";
 
-      // 支援半形、全形括號，以及中括號、大括號的匹配
+      // 1. 提取括號內的備註內容
       const memoMatch = rawValue.match(/[(（[［{｛](.*?)[)）\]］}｝]/);
       if (memoMatch && memoMatch[1]) {
         memo = memoMatch[1].trim();
-      } else if (rawValue.length > 1) {
-        // 如果沒有括號但長度大於 1，則將第一個字元之後的剩餘文字防呆截取為備註
-        const possibleMemo = rawValue.substring(1).replace(/^[:：-\s]+/, '').trim();
-        if (possibleMemo) memo = possibleMemo;
+      }
+
+      // 2. 剔除括號部分，剩餘 "2:華" 或 "2"
+      let cleanValue = rawValue.replace(/[(（[［{｛].*?[)）\]］}｝]/g, '').trim();
+      const code = cleanValue.charAt(0);
+
+      // 3. 智慧解析個別房間被指派的負責人
+      let assignedStaff = todayStaff; // 預設使用最下方人員列分配的房務員
+      const remains = cleanValue.substring(1).trim();
+      if (remains) {
+        const parsedName = remains.replace(/^[:：\s-]+/, '').trim();
+        if (parsedName) {
+          assignedStaff = parsedName;
+        }
       }
 
       // 解析昨天格子代號對應的今日房務分類
@@ -574,7 +598,7 @@ function renderTodayDashboard() {
         taskCode: code,
         taskType: taskType,
         taskClass: taskClass,
-        housekeeper: todayStaff, // 負責人是今天的打掃人員！
+        housekeeper: assignedStaff, // 指派該房的指定負責人！
         memo: memo
       });
     });
