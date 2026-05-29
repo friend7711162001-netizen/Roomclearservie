@@ -541,8 +541,9 @@ body {
 .room-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap; /* 支援手機端自動換行，避免擠壓 */
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .meta-housekeeper {
@@ -560,6 +561,25 @@ body {
 .meta-housekeeper i {
   width: 10px;
   height: 10px;
+}
+
+.meta-memo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #8a5a3e; /* 莫蘭迪深焦糖色 */
+  background-color: #faf2eb; /* 溫暖焦糖奶茶背景 */
+  border: 1px dashed #dfcbbd; /* 虛線邊框，呈現細緻備註質感 */
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-memo i {
+  width: 10px;
+  height: 10px;
+  color: #a46f4d;
 }
 
 /* 清潔與房務類型的色彩視覺設定 */

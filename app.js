@@ -513,31 +513,46 @@ function renderTodayDashboard() {
   let todayRooms = [];
 
   if (yesterdayData && yesterdayData.roomRawValues) {
-    Object.entries(yesterdayData.roomRawValues).forEach(([roomNum, taskCode]) => {
+    Object.entries(yesterdayData.roomRawValues).forEach(([roomNum, rawValue]) => {
+      // 智慧解析狀態代號與備註內容 (例：2(12:00退房) 或 1[加棉被])
+      const code = rawValue.charAt(0);
+      let memo = "";
+
+      // 支援半形、全形括號，以及中括號、大括號的匹配
+      const memoMatch = rawValue.match(/[(（[［{｛](.*?)[)）\]］}｝]/);
+      if (memoMatch && memoMatch[1]) {
+        memo = memoMatch[1].trim();
+      } else if (rawValue.length > 1) {
+        // 如果沒有括號但長度大於 1，則將第一個字元之後的剩餘文字防呆截取為備註
+        const possibleMemo = rawValue.substring(1).replace(/^[:：-\s]+/, '').trim();
+        if (possibleMemo) memo = possibleMemo;
+      }
+
       // 解析昨天格子代號對應的今日房務分類
       let taskType = "未知狀態";
       let taskClass = "";
 
-      if (taskCode === "-") {
+      if (code === "-") {
         taskType = "續住（避免誤入）";
         taskClass = "do-not-enter";
-      } else if (taskCode === "1") {
+      } else if (code === "1") {
         taskType = "小間退房";
         taskClass = "checkout small";
-      } else if (taskCode === "2") {
+      } else if (code === "2") {
         taskType = "大間退房";
         taskClass = "checkout large";
       } else {
-        taskType = taskCode;
+        taskType = code;
         taskClass = "checkout large";
       }
 
       todayRooms.push({
         roomNumber: roomNum,
-        taskCode: taskCode,
+        taskCode: code,
         taskType: taskType,
         taskClass: taskClass,
-        housekeeper: todayStaff // 負責人是今天的打掃人員！
+        housekeeper: todayStaff, // 負責人是今天的打掃人員！
+        memo: memo
       });
     });
   }
@@ -608,6 +623,12 @@ function renderTodayDashboard() {
                 <i data-lucide="user"></i>
                 <span>負責人：${room.housekeeper}</span>
               </span>
+              ${room.memo ? `
+                <span class="meta-memo">
+                  <i data-lucide="message-square"></i>
+                  <span>備註：${room.memo}</span>
+                </span>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -644,6 +665,12 @@ function renderTodayDashboard() {
                 <i data-lucide="user"></i>
                 <span>負責人：${room.housekeeper}</span>
               </span>
+              ${room.memo ? `
+                <span class="meta-memo">
+                  <i data-lucide="message-square"></i>
+                  <span>備註：${room.memo}</span>
+                </span>
+              ` : ''}
             </div>
           </div>
         </div>
