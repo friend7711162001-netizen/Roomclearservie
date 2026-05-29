@@ -136,21 +136,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 📅 日期顯示外框智慧點擊代理（雙保險防禦）
+  // 📅 日期顯示外框智慧點擊代理（終極跨平台防護）
   const dateDisplayWrapper = document.querySelector('.date-display-wrapper');
   if (dateDisplayWrapper) {
-    dateDisplayWrapper.addEventListener('click', (e) => {
-      // 避免與 input 本身的原生點擊事件造成無限遞迴
-      if (e.target !== datePickerEl) {
-        try {
-          if (typeof datePickerEl.showPicker === 'function') {
-            datePickerEl.showPicker(); // 呼叫 HTML5 標準 showPicker 彈出日期選單
-          } else {
-            datePickerEl.click(); // 降級使用 click 點擊
-          }
-        } catch (err) {
-          datePickerEl.click(); // 發生異常時安全降級為模擬點擊
+    dateDisplayWrapper.addEventListener('click', () => {
+      try {
+        if (typeof datePickerEl.showPicker === 'function') {
+          datePickerEl.showPicker(); // 呼叫 HTML5 標準 showPicker 強制彈出日期選擇面板
+        } else {
+          datePickerEl.click();
         }
+      } catch (err) {
+        datePickerEl.click();
       }
     });
   }

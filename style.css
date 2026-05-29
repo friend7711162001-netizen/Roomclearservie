@@ -261,7 +261,8 @@ body {
   height: 100%;
   opacity: 0.01; /* 設為 0.01 避免 iOS Safari 忽略透明元素的點擊 */
   cursor: pointer;
-  z-index: 999;  /* 提升至最頂層，覆蓋所有文字與圖標阻擋，確保點選外框任何地方都能彈出 */
+  z-index: 1;    /* 降級層級，不影響其他元素 */
+  pointer-events: none; /* 讓點擊事件直接穿透至下層的 date-display-wrapper 上 */
 }
 
 /* 今日工作統計卡片區 */
