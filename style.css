@@ -5,29 +5,36 @@
 /* 基礎變數與色彩系統 (莫蘭迪色系) */
 :root {
   --font-primary: 'Outfit', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  
+
   /* 莫蘭迪核心配色 */
-  --bg-primary: #f5f2eb;        /* 溫潤燕麥灰白 (Warm Linen) */
-  --bg-secondary: #e9e4d9;      /* 溫和麻灰褐 (Soft Taupe) */
-  --text-primary: #3c3c3c;      /* 溫和炭黑 (Charcoal) */
-  --text-secondary: #706b61;    /* 灰褐配字 (Muted Earthy Grey) */
-  --border-color: #dcd6c8;      /* 莫蘭迪邊框 */
-  
+  --bg-primary: #f5f2eb;
+  /* 溫潤燕麥灰白 (Warm Linen) */
+  --bg-secondary: #e9e4d9;
+  /* 溫和麻灰褐 (Soft Taupe) */
+  --text-primary: #3c3c3c;
+  /* 溫和炭黑 (Charcoal) */
+  --text-secondary: #706b61;
+  /* 灰褐配字 (Muted Earthy Grey) */
+  --border-color: #dcd6c8;
+  /* 莫蘭迪邊框 */
+
   /* 狀態代表色 (低飽和莫蘭迪色) */
-  --color-stayover: #9fb2c0;    /* 續住整理：莫蘭迪煙藍 (Muted Slate Blue) */
-  --color-stayover-bg: #e6ebf0; /* 續住整理背景 */
+  --color-stayover: #9fb2c0;
+  /* 續住整理：莫蘭迪煙藍 (Muted Slate Blue) */
+  --color-stayover-bg: #e6ebf0;
+  /* 續住整理背景 */
   --color-stayover-text: #3e5362;
-  
+
   /* 退房整理：莫蘭迪泥粉 (Dusty Terracotta) */
   --color-checkout: #dfaba4;
   --color-checkout-bg: #f9ebe9;
   --color-checkout-text: #783e37;
-  
+
   /* 已完成：莫蘭迪鼠尾草綠 (Muted Sage Green) */
   --color-cleaned: #abbf9e;
   --color-cleaned-bg: #eef2eb;
   --color-cleaned-text: #415535;
-  
+
   /* 待整理 / 預設 */
   --color-pending: #c5bba8;
   --color-pending-bg: #f0ede6;
@@ -47,16 +54,16 @@
   --color-white: #ffffff;
   --color-danger: #cf8a85;
   --color-danger-bg: #faeded;
-  
+
   /* 陰影與玻璃擬態 */
   --shadow-sm: 0 4px 6px -1px rgba(90, 80, 70, 0.05), 0 2px 4px -1px rgba(90, 80, 70, 0.03);
   --shadow-md: 0 10px 15px -3px rgba(90, 80, 70, 0.07), 0 4px 6px -2px rgba(90, 80, 70, 0.04);
   --shadow-lg: 0 20px 25px -5px rgba(90, 80, 70, 0.1), 0 10px 10px -5px rgba(90, 80, 70, 0.05);
-  
+
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 24px;
-  
+
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -65,7 +72,8 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-tap-highlight-color: transparent; /* 移除行動裝置點擊藍色高亮 */
+  -webkit-tap-highlight-color: transparent;
+  /* 移除行動裝置點擊藍色高亮 */
 }
 
 body {
@@ -83,7 +91,8 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  max-width: 600px; /* 針對手機端最佳化的寬度，平版與桌機置中顯示 */
+  max-width: 600px;
+  /* 針對手機端最佳化的寬度，平版與桌機置中顯示 */
   margin: 0 auto;
   padding: 0 16px;
   background-color: var(--bg-primary);
@@ -96,7 +105,8 @@ body {
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
-  background-color: rgba(245, 242, 235, 0.95); /* 半透明背景，滾動時帶有霧面質感 */
+  background-color: rgba(245, 242, 235, 0.95);
+  /* 半透明背景，滾動時帶有霧面質感 */
   backdrop-filter: blur(10px);
   z-index: 100;
 }
@@ -162,7 +172,8 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-.icon-button:hover, .icon-button:active {
+.icon-button:hover,
+.icon-button:active {
   background-color: var(--bg-secondary);
   transform: scale(0.95);
 }
@@ -198,7 +209,8 @@ body {
   transition: var(--transition-smooth);
 }
 
-.date-nav-btn:hover, .date-nav-btn:active {
+.date-nav-btn:hover,
+.date-nav-btn:active {
   background-color: rgba(255, 255, 255, 0.4);
   color: var(--text-primary);
 }
@@ -247,10 +259,9 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  opacity: 0;
+  opacity: 0.01; /* 設為 0.01 避免 iOS Safari 忽略透明元素的點擊 */
   cursor: pointer;
-  z-index: 10;
-  /* 移除 pointer-events: none，讓點擊能直接落在透明 input 上，100% 解決 iOS Safari 無法開啟日期選單的限制 */
+  z-index: 999;  /* 提升至最頂層，覆蓋所有文字與圖標阻擋，確保點選外框任何地方都能彈出 */
 }
 
 /* 今日工作統計卡片區 */
@@ -294,10 +305,12 @@ body {
   background-color: var(--color-pending-bg);
   color: var(--color-pending-text);
 }
+
 .large-cleans .stat-icon-wrapper {
   background-color: var(--color-large-theme-bg);
   color: var(--color-large-theme-text);
 }
+
 .small-cleans .stat-icon-wrapper {
   background-color: var(--color-small-theme-bg);
   color: var(--color-small-theme-text);
@@ -435,8 +448,13 @@ body {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .syncing i {
@@ -458,7 +476,8 @@ body {
   transition: var(--transition-smooth);
 }
 
-.text-btn:hover, .text-btn:active {
+.text-btn:hover,
+.text-btn:active {
   background-color: var(--bg-primary);
 }
 
@@ -541,7 +560,8 @@ body {
 .room-meta {
   display: flex;
   align-items: center;
-  flex-wrap: wrap; /* 支援手機端自動換行，避免擠壓 */
+  flex-wrap: wrap;
+  /* 支援手機端自動換行，避免擠壓 */
   gap: 8px;
   margin-top: 6px;
 }
@@ -566,9 +586,12 @@ body {
 .meta-memo {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #8a5a3e; /* 莫蘭迪深焦糖色 */
-  background-color: #faf2eb; /* 溫暖焦糖奶茶背景 */
-  border: 1px dashed #dfcbbd; /* 虛線邊框，呈現細緻備註質感 */
+  color: #8a5a3e;
+  /* 莫蘭迪深焦糖色 */
+  background-color: #faf2eb;
+  /* 溫暖焦糖奶茶背景 */
+  border: 1px dashed #dfcbbd;
+  /* 虛線邊框，呈現細緻備註質感 */
   padding: 2px 8px;
   border-radius: 6px;
   display: flex;
@@ -588,6 +611,7 @@ body {
 .room-card.checkout.large {
   border-left: 6px solid var(--color-large-theme);
 }
+
 .room-card.checkout.large .type-label {
   background-color: var(--color-large-theme-bg);
   color: var(--color-large-theme-text);
@@ -597,6 +621,7 @@ body {
 .room-card.checkout.small {
   border-left: 6px solid var(--color-small-theme);
 }
+
 .room-card.checkout.small .type-label {
   background-color: var(--color-small-theme-bg);
   color: var(--color-small-theme-text);
@@ -604,20 +629,28 @@ body {
 
 /* 3. 續住避免誤入卡片樣式 (代號 -) */
 .room-card.do-not-enter {
-  border-left: 6px solid #a59e92; /* 莫蘭迪灰褐 */
-  background-color: rgba(230, 227, 220, 0.5); /* 降低卡片亮度，呈半透明或淡色 */
-  opacity: 0.85; /* 使續住卡片稍淡，聚焦在需打掃房間 */
+  border-left: 6px solid #a59e92;
+  /* 莫蘭迪灰褐 */
+  background-color: rgba(230, 227, 220, 0.5);
+  /* 降低卡片亮度，呈半透明或淡色 */
+  opacity: 0.85;
+  /* 使續住卡片稍淡，聚焦在需打掃房間 */
 }
+
 .room-card.do-not-enter:hover {
   opacity: 1;
 }
+
 .room-card.do-not-enter .type-label {
   background-color: #eae6dd;
   color: #59544c;
 }
+
 .room-card.do-not-enter .room-number-badge {
-  color: #6e695f; /* 降低房號對比度，代表不需整理 */
+  color: #6e695f;
+  /* 降低房號對比度，代表不需整理 */
 }
+
 .room-card.do-not-enter .status-badge {
   color: #7b3d36;
   background-color: #faeded;
@@ -668,15 +701,19 @@ body {
 }
 
 .clean-title {
-  color: #783e37; /* 深泥粉 */
+  color: #783e37;
+  /* 深泥粉 */
 }
+
 .clean-title .title-icon {
   color: var(--color-checkout);
 }
 
 .stayover-title {
-  color: #59544c; /* 深灰褐 */
+  color: #59544c;
+  /* 深灰褐 */
 }
+
 .stayover-title .title-icon {
   color: #a59e92;
 }
@@ -723,9 +760,20 @@ body {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.8; }
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
 }
 
 .state-message h3 {
@@ -773,7 +821,8 @@ body {
   color: var(--color-white);
 }
 
-.btn-primary:hover, .btn-primary:active {
+.btn-primary:hover,
+.btn-primary:active {
   background-color: #2b3b47;
   transform: translateY(-1px);
 }
@@ -784,7 +833,8 @@ body {
   border: 1px solid var(--border-color);
 }
 
-.btn-secondary:hover, .btn-secondary:active {
+.btn-secondary:hover,
+.btn-secondary:active {
   background-color: var(--border-color);
   transform: translateY(-1px);
 }
@@ -795,7 +845,8 @@ body {
   border: 1px solid var(--color-danger);
 }
 
-.btn-danger-outline:hover, .btn-danger-outline:active {
+.btn-danger-outline:hover,
+.btn-danger-outline:active {
   background-color: var(--color-danger-bg);
 }
 
@@ -1000,8 +1051,15 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .monthly-list-section {
@@ -1063,8 +1121,10 @@ body {
 
 /* 即使在本日，也有特殊發光提示 */
 .monthly-row.is-today {
-  background-color: rgba(171, 191, 158, 0.15); /* 淡淡的鼠尾草綠 */
+  background-color: rgba(171, 191, 158, 0.15);
+  /* 淡淡的鼠尾草綠 */
 }
+
 .monthly-row.is-today:hover {
   background-color: rgba(171, 191, 158, 0.25);
 }
@@ -1154,20 +1214,51 @@ body {
   .app-container {
     padding: 0 12px;
   }
+
   .app-header h1 {
     font-size: 1.15rem;
   }
+
   .date-selector {
     padding: 6px 8px;
   }
+
   .date-nav-btn span {
-    display: none; /* 在極窄手機畫面上只顯示箭頭圖標 */
+    display: none;
+    /* 在極窄手機畫面上只顯示箭頭圖標 */
   }
+
   .room-number-badge {
     font-size: 1.6rem;
     min-width: 60px;
   }
+
   .stat-value {
     font-size: 1.3rem;
   }
+}
+
+/* ==========================================================================
+   房務人員專屬莫蘭迪標籤底色 (Housekeeper Badge Themes)
+   ========================================================================== */
+
+/* 1. 「姐」專屬：莫蘭迪優雅鼠尾草綠 (Muted Sage Green) */
+.room-card.staff-jie .meta-housekeeper {
+  background-color: #e2f0d5 !important;
+  color: #3b5229 !important;
+  border: 1px solid #d3e6c3;
+}
+
+/* 2. 「華」專屬：莫蘭迪溫潤燕麥黃 (Muted Oatmeal Yellow) */
+.room-card.staff-hua .meta-housekeeper {
+  background-color: #f5edd3 !important;
+  color: #634d28 !important;
+  border: 1px solid #ebdcb8;
+}
+
+/* 3. 其他人員專屬：莫蘭迪薰衣草藕紫 (Muted Lavender Purple) */
+.room-card.staff-other .meta-housekeeper {
+  background-color: #f0deea !important;
+  color: #5c354e !important;
+  border: 1px solid #e6ccd9;
 }

@@ -62,6 +62,7 @@ const statSmallCountEl = document.getElementById('stat-small-count');
 const monthlyLargeCountEl = document.getElementById('monthly-large-count');
 const monthlySmallCountEl = document.getElementById('monthly-small-count');
 const monthlyMonthSelectEl = document.getElementById('monthly-month-select');
+const monthlyHousekeeperSelectEl = document.getElementById('monthly-housekeeper-select');
 const monthlyListTitleEl = document.getElementById('monthly-list-title');
 const monthlyDaysListEl = document.getElementById('monthly-days-list');
 
@@ -118,6 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 日/月 看板切換按鈕
   btnMonthlyToggleEl.addEventListener('click', () => toggleViewMode());
   monthlyMonthSelectEl.addEventListener('change', renderMonthlyOverview);
+  if (monthlyHousekeeperSelectEl) {
+    monthlyHousekeeperSelectEl.addEventListener('change', renderMonthlyOverview);
+  }
 
   // 日期切換按鈕
   btnPrevDayEl.addEventListener('click', () => changeDate(-1));
@@ -132,7 +136,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-
+  // 📅 日期顯示外框智慧點擊代理（雙保險防禦）
+  const dateDisplayWrapper = document.querySelector('.date-display-wrapper');
+  if (dateDisplayWrapper) {
+    dateDisplayWrapper.addEventListener('click', (e) => {
+      // 避免與 input 本身的原生點擊事件造成無限遞迴
+      if (e.target !== datePickerEl) {
+        try {
+          if (typeof datePickerEl.showPicker === 'function') {
+            datePickerEl.showPicker(); // 呼叫 HTML5 標準 showPicker 彈出日期選單
+          } else {
+            datePickerEl.click(); // 降級使用 click 點擊
+          }
+        } catch (err) {
+          datePickerEl.click(); // 發生異常時安全降級為模擬點擊
+        }
+      }
+    });
+  }
 
   // 人員篩選變更事件
   housekeeperFilterEl.addEventListener('change', () => {
@@ -318,7 +339,7 @@ async function fetchGoogleSheetData(csvUrl, isBackground = false) {
     }
     updateSyncStatus('success', '已同步最新雲端資料');
     parseCSVToSchedule(rawSheetData);
-    
+
     // 根據當前所在視圖，動態重繪今日打掃卡片或月總覽排班表
     if (isMonthlyView) {
       renderMonthlyOverview();
@@ -480,17 +501,34 @@ function populateHousekeeperDropdown() {
   const currentVal = housekeeperFilterEl.value;
   housekeeperFilterEl.innerHTML = '<option value="ALL">👤 全部人員</option>';
 
-  // 將收集到的所有房務員名字依序加入
+  const currentMonthlyVal = monthlyHousekeeperSelectEl ? monthlyHousekeeperSelectEl.value : "ALL";
+  if (monthlyHousekeeperSelectEl) {
+    monthlyHousekeeperSelectEl.innerHTML = '<option value="ALL">👤 全部人員</option>';
+  }
+
+  // 將收集到的所有房務員名字依序加入選單中
   Array.from(availableHousekeepers).sort().forEach(name => {
+    // 1. 今日日看板的人員篩選
     const option = document.createElement('option');
     option.value = name;
     option.textContent = `👤 ${name}`;
     housekeeperFilterEl.appendChild(option);
+
+    // 2. 月總覽排班表的人員篩選 (加載 null 安全防護)
+    if (monthlyHousekeeperSelectEl) {
+      const optionMonthly = document.createElement('option');
+      optionMonthly.value = name;
+      optionMonthly.textContent = `👤 ${name}`;
+      monthlyHousekeeperSelectEl.appendChild(optionMonthly);
+    }
   });
 
-  // 恢復先前的選擇，避免切換日期時被重置
+  // 恢復先前的選擇，避免重置
   if (Array.from(availableHousekeepers).includes(currentVal)) {
     housekeeperFilterEl.value = currentVal;
+  }
+  if (monthlyHousekeeperSelectEl && Array.from(availableHousekeepers).includes(currentMonthlyVal)) {
+    monthlyHousekeeperSelectEl.value = currentMonthlyVal;
   }
 }
 
@@ -652,10 +690,27 @@ function renderTodayDashboard() {
     // 動態產生退房打掃卡片
     cleanRooms.forEach(room => {
       const card = document.createElement('div');
-      card.className = `room-card ${room.taskClass}`;
+      
+      // 智慧判定負責人名字並加入對應的 class
+      let staffClass = 'staff-other';
+      if (room.housekeeper.includes('姐')) {
+        staffClass = 'staff-jie';
+      } else if (room.housekeeper.includes('華')) {
+        staffClass = 'staff-hua';
+      } else if (!room.housekeeper || room.housekeeper === '未分配' || room.housekeeper === '-') {
+        staffClass = '';
+      }
+      
+      card.className = `room-card ${room.taskClass} ${staffClass}`.trim();
 
       // 智慧圖案配置：大間房為 home (🏠)，小間房為 bed (🛏️)
       const iconName = room.taskClass.includes('large') ? 'home' : 'bed';
+
+      // 取得負責人的莫蘭迪專屬配色 (含任意新員工的動態莫蘭迪配色)
+      const staffColor = getHousekeeperColorStyle(room.housekeeper);
+      const staffStyleAttr = staffColor
+        ? `style="background-color: ${staffColor.bg} !important; color: ${staffColor.text} !important; border: 1px solid ${staffColor.border} !important;"`
+        : '';
 
       card.innerHTML = `
         <div class="room-main-info">
@@ -666,7 +721,7 @@ function renderTodayDashboard() {
               <span>${room.taskType}</span>
             </span>
             <div class="room-meta">
-              <span class="meta-housekeeper">
+              <span class="meta-housekeeper" ${staffStyleAttr}>
                 <i data-lucide="user"></i>
                 <span>負責人：${room.housekeeper}</span>
               </span>
@@ -695,9 +750,26 @@ function renderTodayDashboard() {
     // 動態產生續住防誤入卡片
     stayoverRooms.forEach(room => {
       const card = document.createElement('div');
-      card.className = `room-card ${room.taskClass}`;
+      
+      // 智慧判定負責人名字並加入對應的 class
+      let staffClass = 'staff-other';
+      if (room.housekeeper.includes('姐')) {
+        staffClass = 'staff-jie';
+      } else if (room.housekeeper.includes('華')) {
+        staffClass = 'staff-hua';
+      } else if (!room.housekeeper || room.housekeeper === '未分配' || room.housekeeper === '-') {
+        staffClass = '';
+      }
+      
+      card.className = `room-card ${room.taskClass} ${staffClass}`.trim();
 
       const iconName = "shield-alert"; // 警示盾牌圖示
+
+      // 取得負責人的莫蘭迪專屬配色 (含任意新員工的動態莫蘭迪配色)
+      const staffColor = getHousekeeperColorStyle(room.housekeeper);
+      const staffStyleAttr = staffColor
+        ? `style="background-color: ${staffColor.bg} !important; color: ${staffColor.text} !important; border: 1px solid ${staffColor.border} !important;"`
+        : '';
 
       card.innerHTML = `
         <div class="room-main-info">
@@ -708,7 +780,7 @@ function renderTodayDashboard() {
               <span>${room.taskType}</span>
             </span>
             <div class="room-meta">
-              <span class="meta-housekeeper">
+              <span class="meta-housekeeper" ${staffStyleAttr}>
                 <i data-lucide="user"></i>
                 <span>負責人：${room.housekeeper}</span>
               </span>
@@ -815,17 +887,23 @@ function populateMonthDropdown() {
 }
 
 /**
- * 📊 渲染整個月的日期、星期、大/小數量與負責人員清單
+ * 📊 渲染整個月的日期、星期、大/小數量與負責人員清單 (支援人員過濾與專屬班表)
  */
 function renderMonthlyOverview() {
   const selectedMonth = parseInt(monthlyMonthSelectEl.value);
   if (isNaN(selectedMonth)) return;
 
+  const selectedHousekeeper = monthlyHousekeeperSelectEl.value; // 'ALL' 或者是特定名字如 '姐'
+
   // 1. 更新清單標題
-  monthlyListTitleEl.textContent = `${selectedMonth} 月排班明細`;
+  if (selectedHousekeeper === 'ALL') {
+    monthlyListTitleEl.textContent = `${selectedMonth} 月排班明細`;
+  } else {
+    monthlyListTitleEl.textContent = `${selectedMonth} 月排班明細 (👤 ${selectedHousekeeper} 的個人專屬班表)`;
+  }
 
   const year = currentSelectedDate.getFullYear();
-  // 計算該月份的總天數 (例如 5月為 31天)
+  // 計算該月份 the 總天數 (例如 5月為 31天)
   const daysInMonth = new Date(year, selectedMonth, 0).getDate();
 
   let totalLarge = 0;
@@ -841,26 +919,104 @@ function renderMonthlyOverview() {
 
   // 3. 循序生成 1 號到當月最後一天的清單
   for (let d = 1; d <= daysInMonth; d++) {
-    // 檢查當天是否有排班資料
+    // 檢查當天是否有排班資料 (Day D)
     const dayData = parsedSchedule[selectedMonth] && parsedSchedule[selectedMonth][d]
       ? parsedSchedule[selectedMonth][d]
       : null;
 
-    // 取得各項數值 (若無資料則為預設值)
-    const weekday = dayData ? dayData.weekday : getWeekdayName(year, selectedMonth, d);
-    const housekeeper = dayData ? dayData.todayStaffName : "";
-    const largeCount = dayData ? dayData.largeCount : 0;
-    const smallCount = dayData ? dayData.smallCount : 0;
+    if (!dayData) continue;
 
-    // 累計月份總量
-    totalLarge += largeCount;
-    totalSmall += smallCount;
+    // 取得當天的基本數值與預設人員
+    const weekday = dayData.weekday || getWeekdayName(year, selectedMonth, d);
+    const todayStaff = dayData.todayStaffName || "";
 
-    // 💡 智慧過濾：如果當天沒有大間、小間退房，且沒有分配打掃人員，則代表是空白空閒日，直接隱藏不顯示！
-    const hasActiveTasks = largeCount > 0 || smallCount > 0 || (housekeeper && housekeeper.trim() !== "" && housekeeper !== "-" && housekeeper !== "/");
-    if (!hasActiveTasks) {
+    // 智慧日期偏移：抓取「昨天 Day D-1」的房間狀態，來統計「今天 Day D」的打掃任務
+    const yesterdayDate = new Date(year, selectedMonth - 1, d - 1);
+    const prevMonth = yesterdayDate.getMonth() + 1;
+    const prevDay = yesterdayDate.getDate();
+
+    const yesterdayData = parsedSchedule[prevMonth] ? parsedSchedule[prevMonth][prevDay] : null;
+
+    let dayLargeCount = 0;
+    let daySmallCount = 0;
+    let hasCleanTasks = false;
+
+    // 🧹 收集當天所有實際參與打掃的人員 (進行去重複，支援預設值班人員與個別房間指定負責人)
+    const dayActualStaffs = new Set();
+    if (todayStaff && todayStaff !== "-" && todayStaff !== "/") {
+      todayStaff.split(/[\/|、&]/).forEach(name => {
+        const cleanName = name.trim();
+        if (cleanName) dayActualStaffs.add(cleanName);
+      });
+    }
+
+    // 分析當天有哪些打掃房間歸屬給被篩選的人員
+    if (yesterdayData && yesterdayData.roomRawValues) {
+      Object.entries(yesterdayData.roomRawValues).forEach(([roomNum, rawValue]) => {
+        // 剔除括號部分，剩餘 "2:華" 或 "2"
+        let cleanValue = rawValue.replace(/[(（[［{｛].*?[)）\]］}｝]/g, '').trim();
+        const code = cleanValue.charAt(0);
+
+        // 智慧提取房間格子中的指定負責人
+        let assignedStaff = todayStaff;
+        const remains = cleanValue.substring(1).trim();
+        if (remains) {
+          const parsedName = remains.replace(/^[:：\s-]+/, '').trim();
+          if (parsedName) {
+            assignedStaff = parsedName;
+          }
+        }
+
+        // 判斷是否為大/小退房打掃
+        const isLarge = code === "2" || (code !== "1" && code !== "-");
+        const isSmall = code === "1";
+
+        if (code === "1" || code === "2" || (code !== "-")) {
+          // 過濾篩選
+          if (selectedHousekeeper === 'ALL' || assignedStaff.includes(selectedHousekeeper)) {
+            hasCleanTasks = true;
+            if (isLarge) dayLargeCount++;
+            if (isSmall) daySmallCount++;
+
+            // 💡 若該打掃房間有指派特定的指定負責人，將其加入當天實際打掃人員集合中
+            if (assignedStaff && assignedStaff !== "未分配" && assignedStaff !== "-" && assignedStaff !== "/") {
+              assignedStaff.split(/[\/|、&]/).forEach(name => {
+                const cleanName = name.trim();
+                if (cleanName) dayActualStaffs.add(cleanName);
+              });
+            }
+          }
+        }
+      });
+    }
+
+    // 決定此行在列表上顯示的負責人名單 (支援多重徽章並列)
+    let staffsToDisplay = [];
+    if (selectedHousekeeper === 'ALL') {
+      staffsToDisplay = Array.from(dayActualStaffs);
+    } else {
+      // 篩選特定人員時，只顯示該特定人員 (前提是他在當天實際有打掃任務名單中)
+      if (Array.from(dayActualStaffs).some(s => s.includes(selectedHousekeeper))) {
+        staffsToDisplay = [selectedHousekeeper];
+      } else {
+        staffsToDisplay = [];
+      }
+    }
+
+    // 💡 智慧過濾：
+    // 如果是篩選特定人員，且該人員當天「完全沒有打掃工作」，則直接過濾不顯示！
+    if (selectedHousekeeper !== 'ALL' && !hasCleanTasks) {
       continue;
     }
+
+    // 如果是顯示「全部人員」，當天沒有任何打掃工作且沒人值班，也過濾不顯示
+    if (selectedHousekeeper === 'ALL' && dayLargeCount === 0 && daySmallCount === 0 && dayActualStaffs.size === 0) {
+      continue;
+    }
+
+    // 累計篩選出的月份總量
+    totalLarge += dayLargeCount;
+    totalSmall += daySmallCount;
 
     // 4. 動態創建列表列
     const row = document.createElement('div');
@@ -871,40 +1027,47 @@ function renderMonthlyOverview() {
       row.classList.add('is-today');
     }
 
-    // 判斷是否為週末 (星期六、星期日)，給予專屬的紅粉色 badge 標色
+    // 判斷是否為週末，給予週末標色
     const isWeekend = weekday === '六' || weekday === '日' || weekday === 'Sat' || weekday === 'Sun';
     const weekendClass = isWeekend ? 'weekend' : '';
 
-    // 5. 繪製列的 HTML 結構
+    // 5. 繪製列的 HTML 結構 (支援多重人員專屬莫蘭迪氣泡徽章並列，優雅極致)
+    let staffBadgesHTML = "";
+    if (staffsToDisplay.length > 0) {
+      staffBadgesHTML = staffsToDisplay.map(staff => {
+        const staffColor = getHousekeeperColorStyle(staff);
+        const staffStyleAttr = staffColor
+          ? `style="background-color: ${staffColor.bg} !important; color: ${staffColor.text} !important; border: 1px solid ${staffColor.border} !important; display: inline-block; margin-right: 4px; margin-bottom: 2px;"`
+          : 'style="display: inline-block; margin-right: 4px; margin-bottom: 2px;"';
+        return `<span class="monthly-staff-badge" ${staffStyleAttr}>${staff}</span>`;
+      }).join('');
+    } else {
+      staffBadgesHTML = `<span style="color:#b5af9f;">-</span>`;
+    }
+
     row.innerHTML = `
       <div class="col-date">
         <span>${selectedMonth}/${String(d).padStart(2, '0')}</span>
         <span class="monthly-weekday-badge ${weekendClass}">${weekday}</span>
       </div>
       <div class="col-staff">
-        ${housekeeper ? `<span class="monthly-staff-badge">${housekeeper}</span>` : `<span style="color:#b5af9f;">-</span>`}
+        ${staffBadgesHTML}
       </div>
       <div class="col-count">
-        <span class="mini-count-badge large ${largeCount === 0 ? 'zero' : ''}">
-          <i data-lucide="home" style="width:10px;height:10px;"></i> 大 ${largeCount}
+        <span class="mini-count-badge large ${dayLargeCount === 0 ? 'zero' : ''}">
+          <i data-lucide="home" style="width:10px;height:10px;"></i> 大 ${dayLargeCount}
         </span>
-        <span class="mini-count-badge small ${smallCount === 0 ? 'zero' : ''}">
-          <i data-lucide="bed" style="width:10px;height:10px;"></i> 小 ${smallCount}
+        <span class="mini-count-badge small ${daySmallCount === 0 ? 'zero' : ''}">
+          <i data-lucide="bed" style="width:10px;height:10px;"></i> 小 ${daySmallCount}
         </span>
       </div>
     `;
 
     // 6. 智慧聯動：點選此列，自動變更日期並切換回日看板
     row.addEventListener('click', () => {
-      // 變更當前選定時間
       currentSelectedDate = new Date(year, selectedMonth - 1, d);
-
-      // 更新日看板上方日期與日期選擇器的數值
       updateDateDisplay();
-
-      // 退出月總覽視圖，返回日卡片
       toggleViewMode(false);
-
       showToast(`📅 已為您切換至 ${selectedMonth}月${d}日 看板！`);
     });
 
@@ -926,4 +1089,55 @@ function getWeekdayName(year, month, day) {
   const days = ['日', '一', '二', '三', '四', '五', '六'];
   const date = new Date(year, month - 1, day);
   return days[date.getDay()];
+}
+
+/**
+ * 🎨 依據負責人姓名智慧生成專屬的莫蘭迪配色
+ * 姐與華使用固定的招牌配色，其他人員則透過名字雜湊值動態產生專屬且固定的柔和莫蘭迪色。
+ * @param {string} name 負責人名字
+ * @returns {Object} 包含背景色 (bg)、文字色 (text) 與邊框色 (border) 的樣式對象
+ */
+function getHousekeeperColorStyle(name) {
+  if (!name || name === '未分配' || name === '-') {
+    return null; // 不做特定配色，沿用預設
+  }
+
+  // 1. 姐 的招牌配色：莫蘭迪優雅鼠尾草綠 (Muted Sage Green)
+  if (name.includes('姐')) {
+    return {
+      bg: '#e2f0d5',
+      text: '#3b5229',
+      border: '#d3e6c3'
+    };
+  }
+
+  // 2. 華 的招牌配色：莫蘭迪溫潤燕麥黃 (Muted Oatmeal Yellow)
+  if (name.includes('華')) {
+    return {
+      bg: '#f5edd3',
+      text: '#634d28',
+      border: '#ebdcb8'
+    };
+  }
+
+  // 3. 其他人員：透過雜湊演算法自動生成專屬且固定的莫蘭迪配色
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // 色相 (Hue) 分布在 360 度，為了與綠色（90-140）和黃色（45-75）做出區隔
+  // 我們可以使用雜湊值去計算色相，並做適當的偏移分布
+  let hue = Math.abs(hash) % 360;
+  if (hue >= 40 && hue <= 150) {
+    // 避開綠色與黃色區間，往冷色調或粉紅色調偏移
+    hue = (hue + 110) % 360;
+  }
+  
+  // 莫蘭迪配色黃金法則：低飽和度 (40-48%)、高亮度 (88-92%) 呈現極簡高雅感
+  const bg = `hsl(${hue}, 44%, 90%)`;
+  const border = `hsl(${hue}, 38%, 82%)`;
+  const text = `hsl(${hue}, 46%, 26%)`; // 確保深色字，對比清晰好讀
+
+  return { bg, border, text };
 }

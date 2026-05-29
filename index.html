@@ -23,7 +23,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="房務看板">
   <!-- CSS 樣式表 -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.1">
 </head>
 
 <body>
@@ -46,7 +46,7 @@
           <button id="btn-monthly-toggle" class="icon-button" title="切換月分總覽">
             <i data-lucide="calendar-days"></i>
           </button>
-          <button id="btn-settings-toggle" class="icon-button" title="設定 Google Sheet 連結">
+          <button id="btn-settings-toggle" class="icon-button" title="設定 Google Sheet 連結" style="display: none;">
             <i data-lucide="settings"></i>
           </button>
         </div>
@@ -204,15 +204,26 @@
       </section>
 
       <!-- 月總覽控制列 -->
-      <section class="filter-toolbar" style="margin-top: 0;">
+      <section class="filter-toolbar" style="margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
         <div class="filter-group">
-          <label for="monthly-month-select">
-            <i data-lucide="calendar"></i>
+          <label for="monthly-month-select" style="font-size: 0.8rem;">
+            <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
             <span>選擇月份：</span>
           </label>
           <div class="select-wrapper">
             <select id="monthly-month-select">
               <!-- 由 JS 動態生成有資料的月份 -->
+            </select>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label for="monthly-housekeeper-select" style="font-size: 0.8rem;">
+            <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+            <span>篩選人員：</span>
+          </label>
+          <div class="select-wrapper">
+            <select id="monthly-housekeeper-select">
+              <option value="ALL">👤 全部人員</option>
             </select>
           </div>
         </div>
@@ -288,7 +299,7 @@
   </div>
 
   <!-- JS 邏輯 -->
-  <script src="app.js"></script>
+  <script src="app.js?v=1.1"></script>
 </body>
 
 </html>
