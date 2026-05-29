@@ -143,6 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const todayStr = formatDateToYYYYMMDD(currentSelectedDate);
   datePickerEl.value = todayStr;
   updateDateDisplay();
+
+  // 啟動背景自動同步定時器：每隔 5 分鐘自動在背景靜默同步一次最新雲端資料
+  setInterval(() => {
+    const savedUrl = localStorage.getItem('google_sheet_csv_url') || DEFAULT_CSV_URL;
+    const hasConfiguredUrl = savedUrl && savedUrl !== "您的_GOOGLE_SHEET_CSV_發佈網址_填在這裡" && savedUrl.trim() !== "";
+    if (hasConfiguredUrl) {
+      fetchGoogleSheetData(savedUrl, true);
+    }
+  }, 300000); // 300,000 毫秒 = 5 分鐘
 });
 
 // --- 顯示 Toast 提示訊息 ---
@@ -274,8 +283,12 @@ function updateSyncStatus(type, message) {
 }
 
 // --- 從 Google Sheet URL 下載 CSV 資料 ---
-async function fetchGoogleSheetData(csvUrl) {
-  updateSyncStatus('syncing', '正在同步雲端資料...');
+async function fetchGoogleSheetData(csvUrl, isBackground = false) {
+  if (isBackground) {
+    updateSyncStatus('syncing', '正在背景自動同步...');
+  } else {
+    updateSyncStatus('syncing', '正在同步雲端資料...');
+  }
 
   try {
     // 為了防呆，如果使用者複製了整份 Sheet 的 edit 網址而非 pub 網址，我們在 JS 做個貼心的自動置換！
@@ -285,7 +298,7 @@ async function fetchGoogleSheetData(csvUrl) {
       if (match && match[1]) {
         // 自動轉換成 CSV 匯出網址格式
         finalUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
-        showToast('💡 已貼心為您自動轉換試算表下載格式');
+        if (!isBackground) showToast('💡 已貼心為您自動轉換試算表下載格式');
       }
     }
 
@@ -300,13 +313,23 @@ async function fetchGoogleSheetData(csvUrl) {
     }
 
     rawSheetData = text;
-    showToast('✅ 雲端資料同步成功！');
+    if (!isBackground) {
+      showToast('✅ 雲端資料同步成功！');
+    }
     updateSyncStatus('success', '已同步最新雲端資料');
     parseCSVToSchedule(rawSheetData);
-    renderTodayDashboard();
+    
+    // 根據當前所在視圖，動態重繪今日打掃卡片或月總覽排班表
+    if (isMonthlyView) {
+      renderMonthlyOverview();
+    } else {
+      renderTodayDashboard();
+    }
   } catch (error) {
     console.error('Fetch Error:', error);
-    showToast('❌ 同步失敗，請確認網路或連結是否正確！');
+    if (!isBackground) {
+      showToast('❌ 同步失敗，請確認網路或連結是否正確！');
+    }
     updateSyncStatus('error', '雲端同步失敗');
 
     if (!rawSheetData) {
