@@ -600,14 +600,19 @@ function renderTodayDashboard() {
       let cleanValue = rawValue.replace(/[(（[［{｛].*?[)）\]］}｝]/g, '').trim();
       const code = cleanValue.charAt(0);
 
-      // 3. 智慧解析個別房間被指派的負責人
-      let assignedStaff = todayStaff; // 預設使用最下方人員列分配的房務員
-      const remains = cleanValue.substring(1).trim();
-      if (remains) {
-        const parsedName = remains.replace(/^[:：\s-]+/, '').trim();
-        if (parsedName) {
-          assignedStaff = parsedName;
+      // 3. 智慧解析個別房間被指派的負責人 (續住房 "-" 不需分配負責人)
+      let assignedStaff = "";
+      if (code !== "-") {
+        assignedStaff = todayStaff; // 預設使用最下方人員列分配的房務員
+        const remains = cleanValue.substring(1).trim();
+        if (remains) {
+          const parsedName = remains.replace(/^[:：\s-]+/, '').trim();
+          if (parsedName) {
+            assignedStaff = parsedName;
+          }
         }
+      } else {
+        assignedStaff = ""; // 續住房不分配負責人
       }
 
       // 解析昨天格子代號對應的今日房務分類
@@ -747,26 +752,9 @@ function renderTodayDashboard() {
     // 動態產生續住防誤入卡片
     stayoverRooms.forEach(room => {
       const card = document.createElement('div');
-      
-      // 智慧判定負責人名字並加入對應的 class
-      let staffClass = 'staff-other';
-      if (room.housekeeper.includes('姐')) {
-        staffClass = 'staff-jie';
-      } else if (room.housekeeper.includes('華')) {
-        staffClass = 'staff-hua';
-      } else if (!room.housekeeper || room.housekeeper === '未分配' || room.housekeeper === '-') {
-        staffClass = '';
-      }
-      
-      card.className = `room-card ${room.taskClass} ${staffClass}`.trim();
+      card.className = `room-card ${room.taskClass}`;
 
       const iconName = "shield-alert"; // 警示盾牌圖示
-
-      // 取得負責人的莫蘭迪專屬配色 (含任意新員工的動態莫蘭迪配色)
-      const staffColor = getHousekeeperColorStyle(room.housekeeper);
-      const staffStyleAttr = staffColor
-        ? `style="background-color: ${staffColor.bg} !important; color: ${staffColor.text} !important; border: 1px solid ${staffColor.border} !important;"`
-        : '';
 
       card.innerHTML = `
         <div class="room-main-info">
@@ -777,10 +765,6 @@ function renderTodayDashboard() {
               <span>${room.taskType}</span>
             </span>
             <div class="room-meta">
-              <span class="meta-housekeeper" ${staffStyleAttr}>
-                <i data-lucide="user"></i>
-                <span>負責人：${room.housekeeper}</span>
-              </span>
               ${room.memo ? `
                 <span class="meta-memo">
                   <i data-lucide="message-square"></i>
