@@ -600,6 +600,17 @@ function renderTodayDashboard() {
       let cleanValue = rawValue.replace(/[(（[［{｛].*?[)）\]］}｝]/g, '').trim();
       const code = cleanValue.charAt(0);
 
+      // 🔍 智慧檢測：判斷這間退房在「今天 Day D」是否有新客人入住 (接房)
+      // 若今天 Day D 欄位有任何非空、非 "0" 的代號（如 "-", "1", "2" 等），即代表下午有新客入住！
+      let isNewCheckIn = false;
+      if (code !== "-" && dayData && dayData.roomRawValues && dayData.roomRawValues[roomNum]) {
+        const todayRaw = dayData.roomRawValues[roomNum].trim();
+        const todayCode = todayRaw.replace(/[(（[［{｛].*?[)）\]］}｝]/g, '').trim().charAt(0);
+        if (todayCode && todayCode !== "0" && todayCode !== "") {
+          isNewCheckIn = true;
+        }
+      }
+
       // 3. 智慧解析個別房間被指派的負責人 (續住房 "-" 不需分配負責人)
       let assignedStaff = "";
       if (code !== "-") {
@@ -639,7 +650,8 @@ function renderTodayDashboard() {
         taskType: taskType,
         taskClass: taskClass,
         housekeeper: assignedStaff, // 指派該房的指定負責人！
-        memo: memo
+        memo: memo,
+        isNewCheckIn: isNewCheckIn // 新增今日是否有新客入住標記
       });
     });
   }
@@ -727,6 +739,12 @@ function renderTodayDashboard() {
                 <i data-lucide="user"></i>
                 <span>負責人：${room.housekeeper}</span>
               </span>
+              ${room.isNewCheckIn ? `
+                <span class="meta-checkin">
+                  <i data-lucide="key-round"></i>
+                  <span>今日新入住</span>
+                </span>
+              ` : ''}
               ${room.memo ? `
                 <span class="meta-memo">
                   <i data-lucide="message-square"></i>
@@ -921,6 +939,7 @@ function renderMonthlyOverview() {
     let dayLargeCount = 0;
     let daySmallCount = 0;
     let hasCleanTasks = false;
+    const checkInRooms = []; // 🔍 新增：用來收集當日有新客入住的房號名單
 
     // 🧹 收集當天所有實際參與打掃的人員 (進行去重複，支援預設值班人員與個別房間指定負責人)
     const dayActualStaffs = new Set();
@@ -965,6 +984,20 @@ function renderMonthlyOverview() {
                 const cleanName = name.trim();
                 if (cleanName) dayActualStaffs.add(cleanName);
               });
+            }
+
+            // 🔍 智慧判斷這間退房在「今天 Day D」是否有新客入住 (接房)
+            let isRoomNewCheckIn = false;
+            if (dayData && dayData.roomRawValues && dayData.roomRawValues[roomNum]) {
+              const todayRaw = dayData.roomRawValues[roomNum].trim();
+              const todayCode = todayRaw.replace(/[(（[［{｛].*?[)）\]］}｝]/g, '').trim().charAt(0);
+              if (todayCode && todayCode !== "0" && todayCode !== "") {
+                isRoomNewCheckIn = true;
+              }
+            }
+
+            if (isRoomNewCheckIn) {
+              checkInRooms.push(roomNum); // 加入當日接房房號名單
             }
           }
         }
@@ -1026,6 +1059,20 @@ function renderMonthlyOverview() {
       staffBadgesHTML = `<span style="color:#b5af9f;">-</span>`;
     }
 
+    // 🔍 排序房號並生成新入住 HTML 鑰匙徽章氣泡
+    checkInRooms.sort();
+    let checkInHTML = "";
+    if (checkInRooms.length > 0) {
+      checkInHTML = `
+        <span class="mini-checkin-badge">
+          <i data-lucide="key-round"></i>
+          <span>${checkInRooms.join('/')}</span>
+        </span>
+      `;
+    } else {
+      checkInHTML = `<span style="color:#c0b8ac; font-size:0.75rem;">-</span>`;
+    }
+
     row.innerHTML = `
       <div class="col-date">
         <span>${selectedMonth}/${String(d).padStart(2, '0')}</span>
@@ -1041,6 +1088,9 @@ function renderMonthlyOverview() {
         <span class="mini-count-badge small ${daySmallCount === 0 ? 'zero' : ''}">
           <i data-lucide="bed" style="width:10px;height:10px;"></i> 小 ${daySmallCount}
         </span>
+      </div>
+      <div class="col-checkin">
+        ${checkInHTML}
       </div>
     `;
 

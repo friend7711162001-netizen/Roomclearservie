@@ -1071,7 +1071,7 @@ body {
 
 .monthly-list-table-header {
   display: grid;
-  grid-template-columns: 2.2fr 1.8fr 3fr;
+  grid-template-columns: 2fr 1.5fr 2fr 2.5fr;
   padding: 10px 16px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -1098,7 +1098,7 @@ body {
 
 .monthly-row {
   display: grid;
-  grid-template-columns: 2.2fr 1.8fr 3fr;
+  grid-template-columns: 2fr 1.5fr 2fr 2.5fr;
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid rgba(220, 214, 200, 0.4);
@@ -1262,4 +1262,53 @@ body {
   background-color: #f0deea !important;
   color: #5c354e !important;
   border: 1px solid #e6ccd9;
+}
+
+/* 4. 今日有新客入住專屬：莫蘭迪煙燻粉桔 (Muted Rose Gold/Terracotta) */
+.meta-checkin {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #8e3d36 !important; /* 深珊瑚粉紅，字體好讀 */
+  background-color: #fceeed !important; /* 煙燻粉粉嫩背景，溫暖高級 */
+  border: 1px solid #f2d7d4;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.meta-checkin i {
+  width: 10px;
+  height: 10px;
+  color: #a65147;
+}
+
+/* 5. 月份總覽新入住房間欄位與徽章樣式 */
+.col-checkin {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-start;
+  flex-wrap: wrap; /* 支援房號過多時自動換行 */
+}
+
+.mini-checkin-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #8e3d36 !important; /* 深珊瑚紅 */
+  background-color: #fceeed !important; /* 煙燻粉背景 */
+  border: 1px solid #f2d7d4;
+  padding: 2px 6px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 1;
+}
+
+.mini-checkin-badge i {
+  width: 9px;
+  height: 9px;
+  color: #a65147;
 }
