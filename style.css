@@ -1312,3 +1312,239 @@ body {
   height: 9px;
   color: #a65147;
 }
+
+/* ==========================================================================
+   管理員模式與直接編輯功能專屬樣式 (Admin & Editing styles)
+   ========================================================================== */
+
+/* 1. 管理員鎖頭按鈕狀態 */
+.btn-admin-lock {
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.btn-admin-lock.unlocked {
+  background-color: var(--color-cleaned-bg) !important;
+  color: var(--color-cleaned-text) !important;
+  border-color: var(--color-cleaned) !important;
+  box-shadow: 0 0 10px rgba(171, 191, 158, 0.4);
+}
+
+/* 2. 房間卡片「編輯 ✏️」按鈕樣式 */
+.btn-edit-room {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background-color: var(--color-white);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: var(--shadow-sm);
+  margin-top: 8px;
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+}
+
+.btn-edit-room i {
+  width: 14px;
+  height: 14px;
+}
+
+/* 只有在啟用管理員模式時，才淡入與縮放顯示編輯按鈕 */
+.admin-mode .btn-edit-room {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.btn-edit-room:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.btn-edit-room:active {
+  transform: scale(0.95);
+}
+
+/* 3. 雙彈窗共用遮罩（毛玻璃效果底層） */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1500;
+  background-color: rgba(90, 85, 75, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 4. 彈窗本體樣式 (莫蘭迪米色調圓角) */
+.modal-content {
+  background-color: var(--color-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.modal-overlay:not(.hidden) .modal-content {
+  transform: translateY(0) scale(1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-header h3 i {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 5. 編輯房務資訊摘要徽章 */
+.edit-room-info-summary {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.info-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-color);
+}
+
+.info-badge i {
+  width: 12px;
+  height: 12px;
+}
+
+.info-badge.date {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.info-badge.room {
+  background-color: var(--color-large-theme-bg);
+  color: var(--color-large-theme-text);
+  border-color: var(--color-large-theme);
+}
+
+/* 6. 輸入框與下拉選單 */
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: var(--transition-smooth);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-stayover);
+  background-color: var(--color-white);
+  box-shadow: 0 0 0 3px rgba(168, 185, 196, 0.25);
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  appearance: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-stayover);
+  background-color: var(--color-white);
+}
+
+.custom-input-wrapper {
+  animation: slideDown 0.25s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 7. Loading 旋轉動畫 */
+.spinner-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}

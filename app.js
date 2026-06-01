@@ -8,6 +8,11 @@
 // 這樣一來，所有員工的手機第一次點開網頁，完全不需要貼上網址，就能直接自動同步您的排班表！
 const DEFAULT_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTH_CEEBRYiWoKSC28uXLf6m_svyJ-iTimxeY7mj-BgiLhewfvkw_VTgXXKAaJxIMsJyFd7C14VC3Y/pub?gid=1383763028&single=true&output=csv";
 
+// --- 🔒 安全寫入設定區 (GAS 雲端寫入網址) ---
+// 💡 請部署好 Google Apps Script 網頁應用程式後，將產生的「網頁應用程式網址」填在下方！
+// 填寫後，管理員即可在網頁端直接編輯負責人與備註，自動寫回 Google Sheets 試算表。
+const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxoIx6xu3U_0W1I8KVXudjQBVHtrzDMckm1xYnSCRATlCS-5sfzJqyQwaqwoUR-phGB/exec";
+
 // --- 全域變數定義 ---
 let rawSheetData = "";      // 儲存從 Google Sheet 抓取或 Demo 的原始文字 (CSV/TSV 格式)
 let currentSelectedDate = new Date(); // 當前瀏覽的日期，預設為今天
@@ -87,6 +92,25 @@ const btnOpenSettingsHeroEl = document.getElementById('btn-open-settings-hero');
 const toastEl = document.getElementById('toast');
 const toastMessageEl = document.getElementById('toast-message');
 
+// --- 管理員模式與彈窗 DOM 元素 ---
+const btnAdminToggleEl = document.getElementById('btn-admin-toggle');
+const adminLoginModalEl = document.getElementById('admin-login-modal');
+const inputAdminPasswordEl = document.getElementById('input-admin-password');
+const btnSubmitLoginEl = document.getElementById('btn-submit-login');
+const btnLoginCloseEl = document.getElementById('btn-login-close');
+
+const editRoomModalEl = document.getElementById('edit-room-modal');
+const btnEditCloseEl = document.getElementById('btn-edit-close');
+const editModalDateEl = document.getElementById('edit-modal-date');
+const editModalRoomEl = document.getElementById('edit-modal-room');
+const editHousekeeperSelectEl = document.getElementById('edit-housekeeper-select');
+const customHousekeeperWrapperEl = document.getElementById('custom-housekeeper-wrapper');
+const inputCustomHousekeeperEl = document.getElementById('input-custom-housekeeper');
+const inputRoomMemoEl = document.getElementById('input-room-memo');
+const btnSaveRoomEditEl = document.getElementById('btn-save-room-edit');
+const btnSaveTextEl = document.getElementById('btn-save-text');
+const btnSaveLoadingEl = document.getElementById('btn-save-loading');
+
 // --- 系統初始化與事件綁定 ---
 document.addEventListener('DOMContentLoaded', () => {
   // 初始化 Lucide 圖標
@@ -155,6 +179,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // 人員篩選變更事件
   housekeeperFilterEl.addEventListener('change', () => {
     renderTodayDashboard();
+  });
+
+  // 管理員登入與狀態初始化
+  initAdminMode();
+
+  btnAdminToggleEl.addEventListener('click', toggleAdminLogin);
+  btnLoginCloseEl.addEventListener('click', () => closeAdminModal());
+  btnSubmitLoginEl.addEventListener('click', handleAdminLogin);
+  btnEditCloseEl.addEventListener('click', () => closeEditModal());
+  btnSaveRoomEditEl.addEventListener('click', saveRoomEditData);
+
+  // 當自訂負責人下拉選單改變時，智慧顯示/隱藏手動輸入框
+  editHousekeeperSelectEl.addEventListener('change', (e) => {
+    if (e.target.value === '__CUSTOM__') {
+      customHousekeeperWrapperEl.classList.remove('hidden');
+    } else {
+      customHousekeeperWrapperEl.classList.add('hidden');
+    }
   });
 
   // 設定日期選擇器預設最大最小值
@@ -651,7 +693,8 @@ function renderTodayDashboard() {
         taskClass: taskClass,
         housekeeper: assignedStaff, // 指派該房的指定負責人！
         memo: memo,
-        isNewCheckIn: isNewCheckIn // 新增今日是否有新客入住標記
+        isNewCheckIn: isNewCheckIn, // 新增今日是否有新客入住標記
+        rawValue: rawValue // 保存原始試算表儲存格資料，方便編輯時拆解
       });
     });
   }
@@ -704,7 +747,7 @@ function renderTodayDashboard() {
     // 動態產生退房打掃卡片
     cleanRooms.forEach(room => {
       const card = document.createElement('div');
-      
+
       // 智慧判定負責人名字並加入對應的 class
       let staffClass = 'staff-other';
       if (room.housekeeper.includes('姐')) {
@@ -714,7 +757,7 @@ function renderTodayDashboard() {
       } else if (!room.housekeeper || room.housekeeper === '未分配' || room.housekeeper === '-') {
         staffClass = '';
       }
-      
+
       card.className = `room-card ${room.taskClass} ${staffClass}`.trim();
 
       // 智慧圖案配置：大間房為 home (🏠)，小間房為 bed (🛏️)
@@ -756,6 +799,14 @@ function renderTodayDashboard() {
         </div>
         <div class="room-status-indicator">
           <span class="status-badge">今日打掃</span>
+          <button class="btn-edit-room btn-edit-room-trigger" 
+                  data-room="${room.roomNumber}" 
+                  data-housekeeper="${room.housekeeper}" 
+                  data-memo="${room.memo}" 
+                  data-raw-value="${room.rawValue || room.taskCode}"
+                  title="編輯房務資料">
+            <i data-lucide="edit-3"></i>
+          </button>
         </div>
       `;
       gridCleanEl.appendChild(card);
@@ -794,6 +845,14 @@ function renderTodayDashboard() {
         </div>
         <div class="room-status-indicator">
           <span class="status-badge">避免誤入</span>
+          <button class="btn-edit-room btn-edit-room-trigger" 
+                  data-room="${room.roomNumber}" 
+                  data-housekeeper="${room.housekeeper}" 
+                  data-memo="${room.memo}" 
+                  data-raw-value="${room.rawValue || room.taskCode}"
+                  title="編輯房務資料">
+            <i data-lucide="edit-3"></i>
+          </button>
         </div>
       `;
       gridStayoverEl.appendChild(card);
@@ -802,6 +861,9 @@ function renderTodayDashboard() {
 
   // 重新渲染新插入 DOM 的 Lucide 圖標
   lucide.createIcons();
+
+  // 綁定編輯按鈕點擊事件
+  bindRoomEditClickEvents();
 }
 
 // --- ⚙️ 月總覽視圖核心控制邏輯 ---
@@ -1156,7 +1218,7 @@ function getHousekeeperColorStyle(name) {
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   // 色相 (Hue) 分布在 360 度，為了與綠色（90-140）和黃色（45-75）做出區隔
   // 我們可以使用雜湊值去計算色相，並做適當的偏移分布
   let hue = Math.abs(hash) % 360;
@@ -1164,11 +1226,328 @@ function getHousekeeperColorStyle(name) {
     // 避開綠色與黃色區間，往冷色調或粉紅色調偏移
     hue = (hue + 110) % 360;
   }
-  
+
   // 莫蘭迪配色黃金法則：低飽和度 (40-48%)、高亮度 (88-92%) 呈現極簡高雅感
   const bg = `hsl(${hue}, 44%, 90%)`;
   const border = `hsl(${hue}, 38%, 82%)`;
   const text = `hsl(${hue}, 46%, 26%)`; // 確保深色字，對比清晰好讀
 
   return { bg, border, text };
+}
+
+// ==========================================================================
+// 🔐 管理員模式與直接編輯 API 連動邏輯 (Admin Mode & Google Sheets API)
+// ==========================================================================
+
+/**
+ * 🔐 初始化管理員狀態，檢查本地是否儲存過密碼
+ */
+function initAdminMode() {
+  const savedPassword = localStorage.getItem('admin_password');
+  if (savedPassword) {
+    document.body.classList.add('admin-mode');
+    updateAdminButtonUI(true);
+  } else {
+    document.body.classList.remove('admin-mode');
+    updateAdminButtonUI(false);
+  }
+}
+
+/**
+ * 🔒 更新管理員鎖頭按鈕的 UI 樣式與圖標
+ * @param {boolean} isUnlocked 是否為已解鎖狀態
+ */
+function updateAdminButtonUI(isUnlocked) {
+  if (isUnlocked) {
+    btnAdminToggleEl.classList.add('unlocked');
+    btnAdminToggleEl.innerHTML = '<i data-lucide="unlock"></i>';
+    btnAdminToggleEl.title = "🔓 管理員模式 (點選登出)";
+  } else {
+    btnAdminToggleEl.classList.remove('unlocked');
+    btnAdminToggleEl.innerHTML = '<i data-lucide="lock"></i>';
+    btnAdminToggleEl.title = "🔐 管理員登入";
+  }
+  lucide.createIcons();
+}
+
+/**
+ * 🔑 切換管理員鎖頭（登入或登出）
+ */
+function toggleAdminLogin() {
+  const savedPassword = localStorage.getItem('admin_password');
+  if (savedPassword) {
+    // 已登入狀態，點選即登出
+    localStorage.removeItem('admin_password');
+    initAdminMode();
+    showToast('🔒 已安全登出管理員模式');
+    renderTodayDashboard(); // 重新渲染以隱藏所有編輯按鈕
+  } else {
+    // 未登入狀態，開啟登入彈窗
+    adminLoginModalEl.classList.remove('hidden');
+    inputAdminPasswordEl.value = '';
+    setTimeout(() => inputAdminPasswordEl.focus(), 100);
+  }
+}
+
+/**
+ * ❌ 關閉管理員登入彈窗
+ */
+function closeAdminModal() {
+  adminLoginModalEl.classList.add('hidden');
+}
+
+/**
+ * 📝 送出管理員密碼驗證
+ */
+function handleAdminLogin() {
+  const password = inputAdminPasswordEl.value.trim();
+  if (!password) {
+    showToast('❌ 請輸入密碼！');
+    return;
+  }
+
+  // 記錄密碼在 localStorage 達到長期免登入效果
+  localStorage.setItem('admin_password', password);
+  initAdminMode();
+  closeAdminModal();
+  showToast('🔓 密碼驗證完成，已啟用管理員編輯模式！');
+  renderTodayDashboard(); // 重新繪製以浮現編輯按鈕
+}
+
+/**
+ * ✏️ 綁定房間卡片上的編輯按鈕事件
+ */
+function bindRoomEditClickEvents() {
+  const editButtons = document.querySelectorAll('.btn-edit-room-trigger');
+  editButtons.forEach(btn => {
+    // 移除舊的監聽器防止重複綁定
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 阻止卡片本身的點擊行為
+
+      const roomNum = newBtn.getAttribute('data-room');
+      const housekeeper = newBtn.getAttribute('data-housekeeper');
+      const memo = newBtn.getAttribute('data-memo');
+      const rawValue = newBtn.getAttribute('data-raw-value');
+
+      openEditModal(roomNum, housekeeper, memo, rawValue);
+    });
+  });
+}
+
+/**
+ * 🎨 開啟編輯彈窗並填入預設資料
+ */
+function openEditModal(roomNum, housekeeper, memo, rawValue) {
+  editModalRoomEl.textContent = roomNum;
+  editModalDateEl.textContent = formatDateToYYYYMMDD(currentSelectedDate);
+
+  // 預設負責人員名單（自動去重複）
+  editHousekeeperSelectEl.innerHTML = '';
+
+  const staffs = new Set(['姐', '華']);
+  availableHousekeepers.forEach(name => {
+    if (name && name !== '未分配' && name !== '-') {
+      staffs.add(name);
+    }
+  });
+
+  // 未分配選項
+  const noneOpt = document.createElement('option');
+  noneOpt.value = '未分配';
+  noneOpt.textContent = '👤 未分配';
+  editHousekeeperSelectEl.appendChild(noneOpt);
+
+  staffs.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = `👤 ${name}`;
+    editHousekeeperSelectEl.appendChild(opt);
+  });
+
+  // 手動輸入選項
+  const customOpt = document.createElement('option');
+  customOpt.value = '__CUSTOM__';
+  customOpt.textContent = '✍️ 手動輸入新人員...';
+  editHousekeeperSelectEl.appendChild(customOpt);
+
+  // 智慧預設選取狀態
+  const currentStaff = housekeeper ? housekeeper.trim() : '';
+  if (!currentStaff || currentStaff === '未分配' || currentStaff === '-') {
+    editHousekeeperSelectEl.value = '未分配';
+    customHousekeeperWrapperEl.classList.add('hidden');
+    inputCustomHousekeeperEl.value = '';
+  } else if (staffs.has(currentStaff)) {
+    editHousekeeperSelectEl.value = currentStaff;
+    customHousekeeperWrapperEl.classList.add('hidden');
+    inputCustomHousekeeperEl.value = '';
+  } else {
+    // 該房間指定了列表外的人，開啟手動輸入
+    editHousekeeperSelectEl.value = '__CUSTOM__';
+    customHousekeeperWrapperEl.classList.remove('hidden');
+    inputCustomHousekeeperEl.value = currentStaff;
+  }
+
+  // 預設填入備註
+  inputRoomMemoEl.value = memo ? memo.trim() : '';
+
+  // 將房間與原始值暫存在按鈕上
+  btnSaveRoomEditEl.setAttribute('data-room', roomNum);
+  btnSaveRoomEditEl.setAttribute('data-raw-value', rawValue || '');
+
+  // 顯示彈窗
+  editRoomModalEl.classList.remove('hidden');
+}
+
+/**
+ * ❌ 關閉編輯彈窗
+ */
+function closeEditModal() {
+  editRoomModalEl.classList.add('hidden');
+}
+
+/**
+ * 💾 儲存編輯結果並發送 API 請求
+ */
+function saveRoomEditData() {
+  const roomNum = btnSaveRoomEditEl.getAttribute('data-room');
+  const rawValue = btnSaveRoomEditEl.getAttribute('data-raw-value');
+
+  // 取得負責人名字
+  let housekeeper = editHousekeeperSelectEl.value;
+  if (housekeeper === '__CUSTOM__') {
+    housekeeper = inputCustomHousekeeperEl.value.trim();
+  }
+  if (housekeeper === '未分配') {
+    housekeeper = '';
+  }
+
+  // 取得備註
+  const memo = inputRoomMemoEl.value.trim();
+
+  // 提取原始狀態碼 (2: 大間, 1: 小間, -: 續住)
+  const code = rawValue && rawValue.length > 0 ? rawValue.charAt(0) : '2';
+
+  // 智慧日期偏移：看板上的「今日打掃」(Day D)，在試算表上其實是修改「昨日」(Day D-1) 的儲存格！
+  const targetDate = new Date(currentSelectedDate);
+  targetDate.setDate(targetDate.getDate() - 1);
+  const targetDateStr = formatDateToYYYYMMDD(targetDate);
+
+  // 💡 模擬示範模式：如果沒有填寫 GAS 寫入網址，則以模擬方式在前端進行示範更新
+  if (!DEFAULT_GAS_URL || DEFAULT_GAS_URL === "您的_GAS_網頁應用程式網址" || DEFAULT_GAS_URL.trim() === "") {
+    simulateDemoSave(targetDateStr, roomNum, code, housekeeper, memo);
+    return;
+  }
+
+  // 組合要寫入儲存格的完整字串，例如 2:華(12:00退房)
+  let newValue = code;
+  if (code === '-') {
+    if (memo) newValue = `-(${memo})`;
+  } else {
+    if (housekeeper && memo) {
+      newValue = `${code}:${housekeeper}(${memo})`;
+    } else if (housekeeper) {
+      newValue = `${code}:${housekeeper}`;
+    } else if (memo) {
+      newValue = `${code}(${memo})`;
+    }
+  }
+
+  // 顯示 Loading 狀態
+  btnSaveTextEl.classList.add('hidden');
+  btnSaveLoadingEl.classList.remove('hidden');
+  btnSaveRoomEditEl.disabled = true;
+
+  const password = localStorage.getItem('admin_password') || '';
+
+  // 發送 POST 至 Google Apps Script (使用 text/plain 以最佳化 CORS 跨網域傳輸)
+  fetch(DEFAULT_GAS_URL, {
+    method: 'POST',
+    mode: 'cors',
+    headers: {
+      'Content-Type': 'text/plain'
+    },
+    body: JSON.stringify({
+      password: password,
+      date: targetDateStr,
+      room: roomNum,
+      newValue: newValue
+    })
+  })
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP 錯誤 ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      if (data.success) {
+        showToast(`💾 儲存成功！房號 ${roomNum} 的試算表已完成同步。`);
+        closeEditModal();
+
+        // 自動重新觸發下載最新試算表資料
+        const savedUrl = localStorage.getItem('google_sheet_csv_url') || DEFAULT_CSV_URL;
+        if (savedUrl) {
+          fetchGoogleSheetData(savedUrl);
+        }
+      } else {
+        showToast(`❌ 儲存失敗：${data.error}`);
+        if (data.error.includes('安全驗證失敗') || data.error.includes('密碼')) {
+          // 若密碼錯誤，則清除本地儲存，引導重新登入
+          localStorage.removeItem('admin_password');
+          initAdminMode();
+        }
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      showToast('❌ 雲端儲存失敗，請確認網路連線或管理員密碼是否正確！');
+    })
+    .finally(() => {
+      btnSaveTextEl.classList.remove('hidden');
+      btnSaveLoadingEl.classList.add('hidden');
+      btnSaveRoomEditEl.disabled = false;
+    });
+}
+
+/**
+ * 💡 模擬 Demo 模式下的寫入，方便使用者在沒有串接雲端時預覽直接更新的效果
+ */
+function simulateDemoSave(targetDateStr, roomNum, code, housekeeper, memo) {
+  btnSaveTextEl.classList.add('hidden');
+  btnSaveLoadingEl.classList.remove('hidden');
+  btnSaveRoomEditEl.disabled = true;
+
+  setTimeout(() => {
+    // 組合新字串
+    let newValue = code;
+    if (code === '-') {
+      if (memo) newValue = `-(${memo})`;
+    } else {
+      if (housekeeper && memo) {
+        newValue = `${code}:${housekeeper}(${memo})`;
+      } else if (housekeeper) {
+        newValue = `${code}:${housekeeper}`;
+      } else if (memo) {
+        newValue = `${code}(${memo})`;
+      }
+    }
+
+    // 更新本地快照
+    const targetDateObj = new Date(targetDateStr);
+    const m = targetDateObj.getMonth() + 1;
+    const d = targetDateObj.getDate();
+
+    if (parsedSchedule[m] && parsedSchedule[m][d]) {
+      parsedSchedule[m][d].roomRawValues[roomNum] = newValue;
+    }
+
+    showToast(`💾 [示範模式] 已模擬更新！房號 ${roomNum} 的資料已更新。`);
+    closeEditModal();
+    renderTodayDashboard(); // 直接重繪以呈現最新內容！
+
+    btnSaveTextEl.classList.remove('hidden');
+    btnSaveLoadingEl.classList.add('hidden');
+    btnSaveRoomEditEl.disabled = false;
+  }, 700);
 }

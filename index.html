@@ -43,6 +43,9 @@
         </div>
         <!-- 功能按鈕群組 -->
         <div class="header-actions" style="display: flex; gap: 8px;">
+          <button id="btn-admin-toggle" class="icon-button btn-admin-lock" title="管理員登入">
+            <i data-lucide="lock"></i>
+          </button>
           <button id="btn-monthly-toggle" class="icon-button" title="切換月分總覽">
             <i data-lucide="calendar-days"></i>
           </button>
@@ -289,6 +292,75 @@
             <li>選擇您排班的<strong>「工作表名稱」</strong>，並將格式改為<strong>「逗號分隔值 (.csv)」</strong>。</li>
             <li>點選<strong>「發佈」</strong>並複製產生的網址，貼到上方即可！</li>
           </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理員密碼驗證彈窗 -->
+  <div id="admin-login-modal" class="modal-overlay hidden">
+    <div class="modal-content admin-login-content">
+      <div class="modal-header">
+        <h3><i data-lucide="lock"></i> 管理員登入</h3>
+        <button id="btn-login-close" class="icon-button modal-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <label for="input-admin-password">請輸入管理員密碼</label>
+          <div class="input-desc">輸入正確的密碼即可開啟編輯模式，修改負責人與備註。</div>
+          <input type="password" id="input-admin-password" class="form-input" placeholder="請輸入密碼">
+        </div>
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button id="btn-submit-login" class="btn btn-primary btn-block">
+            <i data-lucide="check"></i> 確認登入
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 房務資料編輯彈窗 -->
+  <div id="edit-room-modal" class="modal-overlay hidden">
+    <div class="modal-content edit-room-content">
+      <div class="modal-header">
+        <h3><i data-lucide="edit-3"></i> 編輯房間房務資料</h3>
+        <button id="btn-edit-close" class="icon-button modal-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="edit-room-info-summary">
+          <span class="info-badge date"><i data-lucide="calendar"></i> <span id="edit-modal-date">2026-05-28</span></span>
+          <span class="info-badge room"><i data-lucide="home"></i> <span id="edit-modal-room">201</span> 房</span>
+        </div>
+        
+        <!-- 負責人員選擇 -->
+        <div class="settings-group">
+          <label for="edit-housekeeper-select">負責人員</label>
+          <div class="select-wrapper">
+            <select id="edit-housekeeper-select" class="form-select">
+              <!-- 動態生成人員 -->
+            </select>
+          </div>
+          <!-- 自訂負責人輸入框，當選擇「手動輸入」時顯示 -->
+          <div id="custom-housekeeper-wrapper" class="custom-input-wrapper hidden" style="margin-top: 8px;">
+            <input type="text" id="input-custom-housekeeper" class="form-input" placeholder="請輸入新負責人姓名">
+          </div>
+        </div>
+
+        <!-- 備註輸入 -->
+        <div class="settings-group">
+          <label for="input-room-memo">備註（）</label>
+          <input type="text" id="input-room-memo" class="form-input" placeholder="例如：12:00退房、加床 等">
+        </div>
+
+        <div class="modal-actions" style="margin-top: 24px;">
+          <button id="btn-save-room-edit" class="btn btn-primary btn-block">
+            <span id="btn-save-text"><i data-lucide="save"></i> 儲存並同步到雲端</span>
+            <span id="btn-save-loading" class="hidden"><i class="spinner-icon" data-lucide="refresh-cw"></i> 正在儲存...</span>
+          </button>
         </div>
       </div>
     </div>
